@@ -1,0 +1,62 @@
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Join the Club</h1>
+    <p class="sub">Fans get in free. Players, coaches, team managers, and treasurers unlock team tools after membership dues are paid.</p>
+
+    <div class="social-btns">
+      <a href="/auth/google" class="btn--social">Sign up with Google</a>
+      <a href="/auth/facebook" class="btn--social">Sign up with Facebook</a>
+    </div>
+
+    <div class="divider">or</div>
+
+    <form action="/register" method="POST">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input type="text" id="fullName" name="fullName" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="phoneNumber">Phone Number (M-Pesa)</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="2547XXXXXXXX">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+      </div>
+
+      <div class="form-group">
+        <label>I am joining as a&hellip;</label>
+        <div class="role-grid">
+          <div class="role-option">
+            <input type="radio" id="role-fan" name="role" value="fan" checked>
+            <label for="role-fan">Fan</label>
+          </div>
+          <div class="role-option">
+            <input type="radio" id="role-player" name="role" value="player">
+            <label for="role-player">Player</label>
+          </div>
+          <div class="role-option">
+            <input type="radio" id="role-coach" name="role" value="coach">
+            <label for="role-coach">Coach</label>
+          </div>
+          <div class="role-option">
+            <input type="radio" id="role-tm" name="role" value="tm">
+            <label for="role-tm">Team Manager</label>
+          </div>
+          <div class="role-option">
+            <input type="radio" id="role-treasurer" name="role" value="treasurer">
+            <label for="role-treasurer">Treasurer</label>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn--gold btn--block">Create Account</button>
+    </form>
+
+    <p class="auth-footer-link">Already a member? <a href="/login">Log in</a></p>
+  </div>
+</div>

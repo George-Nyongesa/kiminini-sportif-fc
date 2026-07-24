@@ -1,0 +1,121 @@
+<section class="hero">
+  <div class="hero__inner">
+    <span class="hero__eyebrow">&#9679; Kiminini &middot; Trans Nzoia County</span>
+    <h1 class="hero__title">Home of <span>Kiminini Sportif FC</span></h1>
+    <p class="hero__subtitle">Fixtures, live match updates, squad news, and everything it takes to run a community club — built by the people who show up on matchday.</p>
+    <div class="hero__actions">
+      <a href="/register" class="btn btn--gold">Join the Club</a>
+      <a href="/fixtures" class="btn btn--ghost">See Fixtures</a>
+    </div>
+
+    <!-- Signature element: live matchday scoreboard -->
+    <div class="scoreboard">
+      <% if (liveFixtures && liveFixtures.length) { %>
+        <% liveFixtures.forEach(fx => { %>
+          <div class="scoreboard__header">
+            <span class="scoreboard__live"><span class="scoreboard__live-dot"></span> Live</span>
+            <span class="scoreboard__competition"><%= fx.competition %></span>
+          </div>
+          <div class="scoreboard__match">
+            <div class="scoreboard__team">Kiminini Sportif</div>
+            <div class="scoreboard__score">
+              <span><%= fx.our_score %></span><small>—</small><span><%= fx.opponent_score %></span>
+            </div>
+            <div class="scoreboard__team"><%= fx.opponent %></div>
+          </div>
+          <div class="scoreboard__feed" id="ticker-<%= fx.id %>" data-fixture-id="<%= fx.id %>">
+            <span class="scoreboard__feed-item">Live updates will appear here&hellip;</span>
+          </div>
+        <% }) %>
+      <% } else if (upcoming && upcoming.length) { %>
+        <div class="scoreboard__header">
+          <span class="scoreboard__competition">Next Fixture</span>
+        </div>
+        <div class="scoreboard__match">
+          <div class="scoreboard__team">Kiminini Sportif</div>
+          <div class="scoreboard__score"><small><%= new Date(upcoming[0].match_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) %></small></div>
+          <div class="scoreboard__team"><%= upcoming[0].opponent %></div>
+        </div>
+      <% } else { %>
+        <div class="scoreboard__empty">No fixtures scheduled yet — check back soon.</div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="container">
+    <div class="section-head">
+      <h2>Upcoming Fixtures</h2>
+      <a href="/fixtures">Full schedule &rarr;</a>
+    </div>
+    <div class="card-grid">
+      <% if (upcoming && upcoming.length) { %>
+        <% upcoming.forEach(fx => { %>
+          <div class="card card--fixture">
+            <span class="badge <%= fx.home_away === 'home' ? 'badge--home' : 'badge--away' %>"><%= fx.home_away %></span>
+            <span class="date"><%= new Date(fx.match_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span>
+            <span class="opponent">vs <%= fx.opponent %></span>
+            <span class="venue"><%= fx.venue || 'Venue TBC' %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p>No upcoming fixtures yet.</p>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <h2>Recent Results</h2>
+      <a href="/results">All results &rarr;</a>
+    </div>
+    <div class="card-grid">
+      <% if (recentResults && recentResults.length) { %>
+        <% recentResults.forEach(fx => { %>
+          <div class="card card--fixture">
+            <span class="date"><%= new Date(fx.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %></span>
+            <span class="opponent">Kiminini <%= fx.our_score %> &ndash; <%= fx.opponent_score %> <%= fx.opponent %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p>No results recorded yet.</p>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head">
+      <h2>The Squad</h2>
+      <a href="/squad">Full squad &rarr;</a>
+    </div>
+    <div class="card-grid">
+      <% if (squad && squad.length) { %>
+        <% squad.forEach(p => { %>
+          <div class="card player-card">
+            <img class="player-card__photo" src="<%= p.photo_url %>" alt="<%= p.full_name %>" onerror="this.style.background='var(--slate-700)'">
+            <div class="player-card__number">#<%= p.jersey_number || '—' %></div>
+            <div class="player-card__name"><%= p.full_name %></div>
+            <div class="player-card__position"><%= p.position || 'Squad Player' %></div>
+            <% if (p.is_captain) { %><div class="player-card__captain">Captain</div><% } %>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p>Squad list coming soon.</p>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<section id="news" class="block" style="padding-top:0;">
+  <div class="container">
+    <div class="section-head"><h2>Club News</h2></div>
+    <div class="card">
+      <p>Club news and match reports will be published here by the admin team via the CMS.</p>
+    </div>
+  </div>
+</section>

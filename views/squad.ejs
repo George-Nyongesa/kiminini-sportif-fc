@@ -1,0 +1,20 @@
+<section class="block">
+  <div class="container">
+    <div class="section-head"><h2>Squad</h2></div>
+    <div class="card-grid">
+      <% if (squad.length) { %>
+        <% squad.forEach(p => { %>
+          <div class="card player-card">
+            <img class="player-card__photo" src="<%= p.photo_url %>" alt="<%= p.full_name %>" onerror="this.style.background='var(--slate-700)'">
+            <div class="player-card__number">#<%= p.jersey_number || '—' %></div>
+            <div class="player-card__name"><%= p.full_name %></div>
+            <div class="player-card__position"><%= p.position || 'Squad Player' %></div>
+            <% if (p.is_captain) { %><div class="player-card__captain">Captain</div><% } %>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p>Squad list coming soon.</p>
+      <% } %>
+    </div>
+  </div>
+</section>

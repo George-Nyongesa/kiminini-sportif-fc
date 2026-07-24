@@ -1,0 +1,56 @@
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Pay Membership Dues</h1>
+    <p class="sub">
+      <% if (currentUser.is_membership_active) { %>
+        Your membership is already active — thanks for supporting the club!
+      <% } else { %>
+        Team-side accounts (Player, Coach, Team Manager, Treasurer) unlock training schedules, tactical boards, and financial tools once dues are paid via M-Pesa.
+      <% } %>
+    </p>
+
+    <% if (!currentUser.is_membership_active) { %>
+      <form id="stkForm">
+        <div class="form-group">
+          <label for="phoneNumber">M-Pesa Number</label>
+          <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="2547XXXXXXXX" required>
+        </div>
+        <button type="submit" class="btn btn--gold btn--block" id="payBtn">Send Payment Prompt</button>
+      </form>
+      <p id="stkStatus" style="margin-top:14px; color: var(--slate-300);"></p>
+    <% } else { %>
+      <a href="/dashboard" class="btn btn--emerald btn--block">Go to Dashboard</a>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('stkForm');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payBtn = document.getElementById('payBtn');
+      const statusEl = document.getElementById('stkStatus');
+      const phoneNumber = document.getElementById('phoneNumber').value.trim();
+
+      payBtn.disabled = true;
+      payBtn.textContent = 'Sending prompt…';
+      statusEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/payments/stk-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber, paymentType: 'membership_due' }),
+        });
+        const data = await res.json();
+        statusEl.textContent = data.message || data.error;
+      } catch (err) {
+        statusEl.textContent = 'Network error — please try again.';
+      } finally {
+        payBtn.disabled = false;
+        payBtn.textContent = 'Send Payment Prompt';
+      }
+    });
+  }
+</script>

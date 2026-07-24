@@ -1,0 +1,96 @@
+<div class="dashboard-head">
+  <span class="role-pill"><%= role %></span>
+  <h1>Welcome back, <%= currentUser.full_name.split(' ')[0] %></h1>
+</div>
+
+<div class="dashboard-grid">
+
+  <% if (role === 'fan') { %>
+    <div class="card" style="grid-column: 1 / -1;">
+      <h3>Fan Hub</h3>
+      <p>Vote for Player of the Match after every game and join the matchday chat.</p>
+      <% if (latestFixture) { %>
+        <p>Latest result: Kiminini <%= latestFixture.our_score %> &ndash; <%= latestFixture.opponent_score %> <%= latestFixture.opponent %></p>
+        <a href="/fixtures" class="btn btn--emerald">Vote for POTM</a>
+      <% } else { %>
+        <p>No completed matches yet to vote on.</p>
+      <% } %>
+    </div>
+  <% } %>
+
+  <% if (['player','coach','tm'].includes(role)) { %>
+    <div class="stat-card">
+      <div class="value"><%= membershipActive ? 'Active' : 'Pending' %></div>
+      <div class="label">Membership Status</div>
+      <% if (!membershipActive) { %>
+        <p style="margin-top:10px;"><a href="/pay-dues" class="btn btn--gold">Pay Dues to Unlock</a></p>
+      <% } %>
+    </div>
+    <div class="card">
+      <h3>Next Fixture</h3>
+      <% if (nextFixture) { %>
+        <p>vs <%= nextFixture.opponent %> &mdash; <%= new Date(nextFixture.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
+        <p><%= nextFixture.venue || 'Venue TBC' %></p>
+      <% } else { %>
+        <p>No upcoming fixture scheduled.</p>
+      <% } %>
+    </div>
+    <% if (['coach','tm'].includes(role) && membershipActive) { %>
+      <div class="card">
+        <h3>Matchday Tools</h3>
+        <p>Update the tactical lineup board or log live match events.</p>
+        <a href="/fixtures" class="btn btn--emerald">Open Matchday Engine</a>
+      </div>
+    <% } %>
+  <% } %>
+
+  <% if (role === 'treasurer' || role === 'admin') { %>
+    <div class="stat-card">
+      <div class="value">KES <%= Number(totalCollected).toLocaleString() %></div>
+      <div class="label">Total Collected</div>
+    </div>
+    <div class="card" style="grid-column: 1 / -1;">
+      <h3>Recent Payments</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>Member</th><th>Amount</th><th>Type</th><th>Status</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          <% recentPayments.forEach(p => { %>
+            <tr>
+              <td><%= p.full_name %></td>
+              <td>KES <%= Number(p.amount).toLocaleString() %></td>
+              <td><%= p.payment_type.replace('_', ' ') %></td>
+              <td><span class="status-pill status-pill--<%= p.status %>"><%= p.status %></span></td>
+              <td><%= new Date(p.created_at).toLocaleDateString('en-GB') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <p style="margin-top:16px;"><a href="/reports/financial" class="btn btn--ghost">Open Printable Report</a></p>
+    </div>
+  <% } %>
+
+  <% if (role === 'admin') { %>
+    <div class="card" style="grid-column: 1 / -1;">
+      <h3>Pending Membership Approvals</h3>
+      <table class="data-table">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+          <% pendingApprovals.forEach(u => { %>
+            <tr>
+              <td><%= u.full_name %></td>
+              <td><%= u.email %></td>
+              <td><%= u.role_name %></td>
+              <td><span class="status-pill status-pill--pending">awaiting payment</span></td>
+            </tr>
+          <% }) %>
+          <% if (!pendingApprovals.length) { %>
+            <tr><td colspan="4">No pending approvals.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+
+</div>

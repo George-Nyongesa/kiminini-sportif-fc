@@ -1,0 +1,33 @@
+<header class="site-header">
+  <div class="site-header__inner">
+    <a href="/" class="brand">
+      <img src="/images/club-logo.png" alt="Kiminini Sportif FC crest" class="brand__logo" onerror="this.style.display='none'">
+      <span class="brand__text">
+        <span class="brand__name">Kiminini Sportif</span>
+        <span class="brand__tag">Est. Kiminini &middot; FC</span>
+      </span>
+    </a>
+
+    <nav class="main-nav">
+      <a href="/fixtures">Fixtures</a>
+      <a href="/results">Results</a>
+      <a href="/squad">Squad</a>
+      <a href="/#news">News</a>
+      <a href="/#sponsors">Sponsors</a>
+    </nav>
+
+    <div class="nav-actions">
+      <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+        <a href="/dashboard" class="btn btn--ghost">Dashboard</a>
+        <a href="/logout" class="btn btn--outline">Log Out</a>
+      <% } else { %>
+        <a href="/login" class="btn btn--ghost">Log In</a>
+        <a href="/register" class="btn btn--gold">Join the Club</a>
+      <% } %>
+    </div>
+
+    <button class="nav-toggle" aria-label="Toggle navigation" onclick="document.querySelector('.main-nav').classList.toggle('main-nav--open')">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>

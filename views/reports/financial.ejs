@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Financial Report | Kiminini Sportif FC</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Screen preview only — @page/print rules in style.css govern the printed sheet */
+    body { padding: 40px; }
+    .print-sheet { max-width: 900px; margin: 0 auto; background: var(--slate-800); border: 1px solid var(--slate-700); border-radius: var(--radius-lg); padding: 40px; }
+    .report-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 2px solid var(--gold); padding-bottom: 16px; }
+    .summary-row { display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .summary-row .stat-card { flex: 1; min-width: 160px; }
+  </style>
+</head>
+<body>
+  <div class="print-sheet">
+    <div class="report-header">
+      <div>
+        <h1 style="margin-bottom:4px;">Financial Report</h1>
+        <p>Kiminini Sportif FC &middot; Membership dues &amp; payments</p>
+      </div>
+      <div style="text-align:right;">
+        <p style="margin-bottom:2px;">Generated</p>
+        <p><%= generatedAt.toLocaleString('en-GB') %></p>
+      </div>
+    </div>
+
+    <div class="summary-row">
+      <% summary.forEach(s => { %>
+        <div class="stat-card">
+          <div class="value">KES <%= Number(s.total).toLocaleString() %></div>
+          <div class="label"><%= s.status %> (<%= s.count %>)</div>
+        </div>
+      <% }) %>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Member</th><th>Email</th><th>Amount</th><th>Type</th><th>Status</th><th>Receipt</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        <% payments.forEach(p => { %>
+          <tr>
+            <td><%= p.full_name %></td>
+            <td><%= p.email %></td>
+            <td>KES <%= Number(p.amount).toLocaleString() %></td>
+            <td><%= p.payment_type.replace('_',' ') %></td>
+            <td><%= p.status %></td>
+            <td><%= p.mpesa_receipt_number || '—' %></td>
+            <td><%= new Date(p.created_at).toLocaleDateString('en-GB') %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <button class="btn btn--gold no-print" style="margin-top:24px;" onclick="window.print()">Print / Save as PDF</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<section class="block">
+  <div class="container">
+    <div class="section-head"><h2>Fixtures</h2></div>
+    <div class="card-grid">
+      <% if (fixtures.length) { %>
+        <% fixtures.forEach(fx => { %>
+          <div class="card card--fixture">
+            <span class="badge <%= fx.home_away === 'home' ? 'badge--home' : 'badge--away' %>"><%= fx.home_away %></span>
+            <span class="date"><%= new Date(fx.match_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %></span>
+            <span class="opponent">vs <%= fx.opponent %></span>
+            <span class="venue"><%= fx.venue || 'Venue TBC' %> &middot; <%= fx.competition %></span>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p>No fixtures scheduled yet.</p>
+      <% } %>
+    </div>
+  </div>
+</section>

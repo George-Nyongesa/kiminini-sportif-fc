@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title + ' | Kiminini Sportif FC' : 'Kiminini Sportif FC' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('../partials/navbar') %>
+
+  <% if (typeof messages !== 'undefined' && (messages.success.length || messages.error.length)) { %>
+    <div class="flash-stack" role="status">
+      <% messages.success.forEach(msg => { %>
+        <div class="flash flash--success"><%= msg %></div>
+      <% }) %>
+      <% messages.error.forEach(msg => { %>
+        <div class="flash flash--error"><%= msg %></div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <main>
+    <%- body %>
+  </main>
+
+  <%- include('../partials/footer') %>
+</body>
+</html>
