@@ -10,14 +10,32 @@ const bcrypt = require('bcryptjs');
 const { query } = require('./db');
 
 // ---------------------------------------------------------------------
+// Helper: Retrieve full user record with role name attached
+// ---------------------------------------------------------------------
+async function getUserWithRole(userId) {
+  const { rows } = await query(
+    `SELECT u.*, r.name AS role_name
+     FROM users u
+     JOIN roles r ON r.id = u.role_id
+     WHERE u.id = $1`,
+    [userId]
+  );
+  return rows[0] || null;
+}
+
+// ---------------------------------------------------------------------
 // Local Strategy (email + password)
 // ---------------------------------------------------------------------
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
     try {
-      const { rows } = await query('SELECT * FROM users WHERE email = $1', [
-        email.toLowerCase().trim(),
-      ]);
+      const { rows } = await query(
+        `SELECT u.*, r.name AS role_name 
+         FROM users u 
+         JOIN roles r ON r.id = u.role_id 
+         WHERE u.email = $1`,
+        [email.toLowerCase().trim()]
+      );
       const user = rows[0];
 
       if (!user) {
@@ -52,33 +70,37 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
-        const { rows: byGoogleId } = await query('SELECT * FROM users WHERE google_id = $1', [
+        const { rows: byGoogleId } = await query('SELECT id FROM users WHERE google_id = $1', [
           profile.id,
         ]);
 
-        if (byGoogleId[0]) return done(null, byGoogleId[0]);
+        if (byGoogleId[0]) {
+          const user = await getUserWithRole(byGoogleId[0].id);
+          return done(null, user);
+        }
 
         // Link to an existing email-based account, or create a new fan account.
         if (email) {
-          const { rows: byEmail } = await query('SELECT * FROM users WHERE email = $1', [email]);
+          const { rows: byEmail } = await query('SELECT id FROM users WHERE email = $1', [email]);
           if (byEmail[0]) {
-            const { rows: updated } = await query(
-              'UPDATE users SET google_id = $1 WHERE id = $2 RETURNING *',
-              [profile.id, byEmail[0].id]
-            );
-            return done(null, updated[0]);
+            await query('UPDATE users SET google_id = $1 WHERE id = $2', [
+              profile.id,
+              byEmail[0].id,
+            ]);
+            const user = await getUserWithRole(byEmail[0].id);
+            return done(null, user);
           }
         }
 
         const { rows: fanRole } = await query("SELECT id FROM roles WHERE name = 'fan'");
         const { rows: created } = await query(
-          `INSERT INTO users (full_name, email, google_id, avatar_url, role_id)
-           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          `INSERT INTO users (full_name, email, google_id, avatar_url, role_id, is_membership_active)
+           VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
           [
             profile.displayName || 'Kiminini Fan',
             email || `google_${profile.id}@no-email.kimininisportif.fc`,
@@ -87,7 +109,9 @@ passport.use(
             fanRole[0].id,
           ]
         );
-        return done(null, created[0]);
+
+        const newUser = await getUserWithRole(created[0].id);
+        return done(null, newUser);
       } catch (err) {
         return done(err);
       }
@@ -103,33 +127,37 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: process.env.FACEBOOK_CALLBACK_URL,
+      callbackURL: process.env.FACEBOOK_CALLBACK_URL || '/auth/facebook/callback',
       profileFields: ['id', 'displayName', 'photos', 'email'],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value?.toLowerCase();
-        const { rows: byFbId } = await query('SELECT * FROM users WHERE facebook_id = $1', [
+        const { rows: byFbId } = await query('SELECT id FROM users WHERE facebook_id = $1', [
           profile.id,
         ]);
 
-        if (byFbId[0]) return done(null, byFbId[0]);
+        if (byFbId[0]) {
+          const user = await getUserWithRole(byFbId[0].id);
+          return done(null, user);
+        }
 
         if (email) {
-          const { rows: byEmail } = await query('SELECT * FROM users WHERE email = $1', [email]);
+          const { rows: byEmail } = await query('SELECT id FROM users WHERE email = $1', [email]);
           if (byEmail[0]) {
-            const { rows: updated } = await query(
-              'UPDATE users SET facebook_id = $1 WHERE id = $2 RETURNING *',
-              [profile.id, byEmail[0].id]
-            );
-            return done(null, updated[0]);
+            await query('UPDATE users SET facebook_id = $1 WHERE id = $2', [
+              profile.id,
+              byEmail[0].id,
+            ]);
+            const user = await getUserWithRole(byEmail[0].id);
+            return done(null, user);
           }
         }
 
         const { rows: fanRole } = await query("SELECT id FROM roles WHERE name = 'fan'");
         const { rows: created } = await query(
-          `INSERT INTO users (full_name, email, facebook_id, avatar_url, role_id)
-           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          `INSERT INTO users (full_name, email, facebook_id, avatar_url, role_id, is_membership_active)
+           VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
           [
             profile.displayName || 'Kiminini Fan',
             email || `facebook_${profile.id}@no-email.kimininisportif.fc`,
@@ -138,7 +166,9 @@ passport.use(
             fanRole[0].id,
           ]
         );
-        return done(null, created[0]);
+
+        const newUser = await getUserWithRole(created[0].id);
+        return done(null, newUser);
       } catch (err) {
         return done(err);
       }
@@ -153,13 +183,8 @@ passport.serializeUser((user, done) => done(null, user.id));
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const { rows } = await query(
-      `SELECT u.*, r.name AS role_name
-       FROM users u JOIN roles r ON r.id = u.role_id
-       WHERE u.id = $1`,
-      [id]
-    );
-    done(null, rows[0] || false);
+    const user = await getUserWithRole(id);
+    done(null, user || false);
   } catch (err) {
     done(err);
   }

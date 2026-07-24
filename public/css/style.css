@@ -122,7 +122,7 @@ p { margin: 0 0 1em; color: var(--slate-300); }
   gap: 24px;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand__logo { width: 44px; height: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); }
+.brand__logo { width: 52px; height: 52px; object-fit: contain; filter: contrast(1.15) brightness(1.05) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.7)); transition: transform 0.2s ease; }
 .brand__text { display: flex; flex-direction: column; line-height: 1.1; }
 .brand__name { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; letter-spacing: 0.04em; }
 .brand__tag { font-size: 0.68rem; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; }
@@ -380,7 +380,7 @@ table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--slate-7
   display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px;
 }
 .footer-brand { display: flex; gap: 12px; align-items: center; }
-.footer-brand__logo { width: 50px; height: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)); }
+.footer-brand__logo { width: 60px; height: 60px; object-fit: contain; filter: contrast(1.15) brightness(1.05) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.7));}
 .footer-brand__name { font-family: var(--font-display); text-transform: uppercase; margin: 0; }
 .footer-brand__tag { color: var(--slate-400); font-size: 0.82rem; margin: 0; }
 .footer-links { display: flex; gap: 32px; }
@@ -411,4 +411,178 @@ table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--slate-7
   h1, h2, h3, h4 { color: #000 !important; }
   a { color: #000 !important; text-decoration: none !important; }
   @page { size: A4; margin: 18mm; }
+}
+
+
+/* =====================================================================
+   Modern Glassmorphic Dashboard Enhancements
+   ===================================================================== */
+.dashboard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 40px 24px 12px;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--slate-800);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-700);
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--slate-300);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--off-white);
+}
+
+.tab-btn.active {
+  background: var(--emerald-deep);
+  color: var(--emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.dashboard-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Glassmorphism Card Style */
+.card--glass {
+  background: rgba(22, 33, 59, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.span-full {
+  grid-column: 1 / -1;
+}
+
+/* Admin Two-Column Layout */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.card-header p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+}
+
+.form-stack {
+  display: grid;
+  gap: 16px;
+}
+
+/* Data Tables & User Cell */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.user-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-cell__name {
+  color: var(--off-white);
+  font-size: 0.9rem;
+}
+
+.user-cell__email {
+  color: var(--slate-400);
+  font-size: 0.78rem;
+}
+
+.role-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--slate-700);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: var(--slate-700);
+  border: 1px solid var(--slate-600);
+  color: var(--slate-300);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon:hover {
+  border-color: var(--emerald);
+  color: var(--emerald);
+}
+
+.btn-icon--danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--slate-400);
+  padding: 24px 12px !important;
 }

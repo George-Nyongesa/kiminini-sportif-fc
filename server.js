@@ -8,12 +8,12 @@ const flash = require('connect-flash');
 const expressLayouts = require('express-ejs-layouts');
 const passport = require('./config/passport');
 const { pool } = require('./config/db');
-const { attachLocals } = require('./middleware/auth');
+const { attachLocals, requirePasswordChange } = require('./middleware/auth');
 
 const app = express();
 
 // ---------------------------------------------------------------------
-// View engine
+// View engine setup
 // ---------------------------------------------------------------------
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(
   session({
     store: new pgSession({ pool, tableName: 'session' }),
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'kiminini-sportif-secret-key',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -47,11 +47,15 @@ app.use(passport.session());
 app.use(flash());
 app.use(attachLocals);
 
+// Intercept un-rotated temporary passwords across all routes
+app.use(requirePasswordChange);
+
 // ---------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------
 app.use('/', require('./routes/index'));
 app.use('/', require('./routes/auth'));
+app.use('/admin', require('./routes/admin'));
 app.use('/', require('./routes/matches'));
 app.use('/', require('./routes/payments'));
 app.use('/', require('./routes/dashboard'));

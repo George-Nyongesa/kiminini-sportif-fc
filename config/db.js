@@ -1,12 +1,5 @@
-/**
- * PostgreSQL connection pool.
- * Reuses a single pool across the app — do not instantiate `new Pool()` elsewhere.
- */
 const { Pool } = require('pg');
 
-// Neon (and most managed Postgres hosts) require SSL and are usually
-// configured via a single DATABASE_URL. Local dev typically uses discrete
-// PGHOST/PGUSER/etc against a local, non-SSL instance. Support both:
 const useConnectionString = Boolean(process.env.DATABASE_URL);
 
 const pool = new Pool(
@@ -18,8 +11,8 @@ const pool = new Pool(
         idleTimeoutMillis: 30000,
       }
     : {
-        host: process.env.PGHOST,
-        port: process.env.PGPORT,
+        host: process.env.PGHOST || 'localhost',
+        port: process.env.PGPORT || 5432,
         user: process.env.PGUSER,
         password: process.env.PGPASSWORD,
         database: process.env.PGDATABASE,
@@ -33,8 +26,10 @@ pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL pool error:', err);
 });
 
-// Small query helper that logs slow queries in development.
-async function query(text, params) {
+/**
+ * Execute a query with timing instrumentation for dev debugging.
+ */
+const query = async (text, params) => {
   const start = Date.now();
   const res = await pool.query(text, params);
   const duration = Date.now() - start;
@@ -42,6 +37,14 @@ async function query(text, params) {
     console.warn(`Slow query (${duration}ms): ${text}`);
   }
   return res;
-}
+};
 
-module.exports = { pool, query };
+/**
+ * Helper to acquire a client for transactions.
+ */
+const getClient = async () => {
+  const client = await pool.connect();
+  return client;
+};
+
+module.exports = { pool, query, getClient };

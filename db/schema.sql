@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS users (
   role_id               INTEGER NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
   is_membership_active  BOOLEAN NOT NULL DEFAULT FALSE,
   is_active             BOOLEAN NOT NULL DEFAULT TRUE,
+  must_change_password BOOLEAN NOT NULL DEFAULT FALSE, -- Flag for admin-provisioned accounts
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT chk_auth_method CHECK (
@@ -66,6 +67,23 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- ---------------------------------------------------------------------
+-- SEED DEFAULT ADMIN ACCOUNT
+-- Default password hash corresponds to 'ChangeMe2026!'
+-- ---------------------------------------------------------------------
+INSERT INTO users (full_name, email, phone_number, password_hash, role_id, is_membership_active, must_change_password)
+SELECT 
+  'Super Admin', 
+  'admin@kimininisportif.co.ke', 
+  '254700000000', 
+  '$2b$10$E9qJ.s33H5O94Z9N/.y1ve0S2PZ.M1xI31/YwYwO3K0rR1.XJ3I1a',
+  r.id, 
+  TRUE, 
+  TRUE
+FROM roles r 
+WHERE r.name = 'admin'
+ON CONFLICT (email) DO NOTHING;
 
 -- ---------------------------------------------------------------------
 -- PLAYERS  (extends users for Player/Coach/TM roster profiles)

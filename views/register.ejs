@@ -1,62 +1,72 @@
-<div class="auth-wrap">
+
+
+<main class="auth-wrap py-5">
   <div class="auth-card">
     <h1>Join the Club</h1>
-    <p class="sub">Fans get in free. Players, coaches, team managers, and treasurers unlock team tools after membership dues are paid.</p>
+    <p class="sub">Create a fan account to follow match fixtures, access live updates, and vote for Player of the Match.</p>
 
-    <div class="social-btns">
+    <!-- Flash Messages -->
+    <% if (messages.error && messages.error.length > 0) { %>
+      <% messages.error.forEach(function(msg) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= msg %>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <% if (messages.success && messages.success.length > 0) { %>
+      <% messages.success.forEach(function(msg) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= msg %>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <div class="social-btns mb-3">
       <a href="/auth/google" class="btn--social">Sign up with Google</a>
       <a href="/auth/facebook" class="btn--social">Sign up with Facebook</a>
     </div>
 
-    <div class="divider">or</div>
+    <div class="divider mb-4">or</div>
 
     <form action="/register" method="POST">
-      <div class="form-group">
+      <div class="form-group mb-3">
         <label for="fullName">Full Name</label>
-        <input type="text" id="fullName" name="fullName" required>
+        <input type="text" id="fullName" name="fullName" class="form-control" required>
       </div>
-      <div class="form-group">
+
+      <div class="form-group mb-3">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autocomplete="email">
+        <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
       </div>
-      <div class="form-group">
+
+      <div class="form-group mb-3">
         <label for="phoneNumber">Phone Number (M-Pesa)</label>
-        <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="2547XXXXXXXX">
+        <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="2547XXXXXXXX">
       </div>
-      <div class="form-group">
+
+      <div class="form-group mb-4">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+        <input type="password" id="password" name="password" class="form-control" required minlength="8" autocomplete="new-password">
       </div>
 
-      <div class="form-group">
-        <label>I am joining as a&hellip;</label>
-        <div class="role-grid">
-          <div class="role-option">
-            <input type="radio" id="role-fan" name="role" value="fan" checked>
-            <label for="role-fan">Fan</label>
-          </div>
-          <div class="role-option">
-            <input type="radio" id="role-player" name="role" value="player">
-            <label for="role-player">Player</label>
-          </div>
-          <div class="role-option">
-            <input type="radio" id="role-coach" name="role" value="coach">
-            <label for="role-coach">Coach</label>
-          </div>
-          <div class="role-option">
-            <input type="radio" id="role-tm" name="role" value="tm">
-            <label for="role-tm">Team Manager</label>
-          </div>
-          <div class="role-option">
-            <input type="radio" id="role-treasurer" name="role" value="treasurer">
-            <label for="role-treasurer">Treasurer</label>
-          </div>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn--gold btn--block">Create Account</button>
+      <button type="submit" class="btn btn--gold btn--block w-100 py-2">Create Fan Account</button>
     </form>
 
-    <p class="auth-footer-link">Already a member? <a href="/login">Log in</a></p>
+    <div class="info-box mt-4 p-3 bg-light rounded text-center border">
+      <p class="small text-muted mb-0">
+        <strong>Are you a player, coach, or official?</strong><br>
+        Official team accounts are provisioned directly by club administrators. Please contact the team manager or administrator to receive your temporary login credentials.
+      </p>
+    </div>
+
+    <p class="auth-footer-link mt-4 text-center">Already a member? <a href="/login">Log in</a></p>
   </div>
-</div>
+</main>
+

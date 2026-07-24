@@ -1,6 +1,5 @@
 /**
- * RBAC middleware. Attach in route definitions, e.g.:
- *   router.get('/dashboard', requireAuth, requireRole('treasurer', 'admin'), handler)
+ * RBAC and Authentication Middleware
  */
 
 /** Blocks unauthenticated requests. */
@@ -8,6 +7,22 @@ function requireAuth(req, res, next) {
   if (req.isAuthenticated && req.isAuthenticated()) return next();
   req.flash('error', 'Please log in to continue.');
   return res.redirect('/login');
+}
+
+/**
+ * Enforces temporary password updates for admin-provisioned users.
+ * Intercepts requests if `must_change_password` flag is TRUE and redirects to /change-password.
+ */
+function requirePasswordChange(req, res, next) {
+  if (req.isAuthenticated && req.isAuthenticated() && req.user.must_change_password) {
+    // Allow access to password update endpoint and logout route
+    if (req.path === '/change-password' || req.path === '/logout') {
+      return next();
+    }
+    req.flash('error', 'Please change your temporary password to continue.');
+    return res.redirect('/change-password');
+  }
+  return next();
 }
 
 /**
@@ -56,4 +71,10 @@ function attachLocals(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireRole, requireActiveMembership, attachLocals };
+module.exports = { 
+  requireAuth, 
+  requirePasswordChange, 
+  requireRole, 
+  requireActiveMembership, 
+  attachLocals 
+};

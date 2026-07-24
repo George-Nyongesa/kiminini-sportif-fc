@@ -35,6 +35,7 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
     }
 
     if (role === 'admin') {
+      // Fetch pending membership approvals
       const { rows: pendingApprovals } = await query(
         `SELECT u.id, u.full_name, u.email, r.name AS role_name, u.is_membership_active
          FROM users u JOIN roles r ON r.id = u.role_id
@@ -42,6 +43,15 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
          ORDER BY u.created_at DESC LIMIT 10`
       );
       viewData.pendingApprovals = pendingApprovals;
+
+      // Fetch all registered system users for User Management tab
+      const { rows: allUsers } = await query(
+        `SELECT u.id, u.full_name, u.email, u.is_active, r.name AS role_name
+         FROM users u
+         JOIN roles r ON r.id = u.role_id
+         ORDER BY u.created_at DESC`
+      );
+      viewData.allUsers = allUsers;
     }
 
     if (role === 'fan') {

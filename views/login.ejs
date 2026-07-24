@@ -1,27 +1,54 @@
-<div class="auth-wrap">
+
+<main class="auth-wrap py-5">
   <div class="auth-card">
     <h1>Welcome Back</h1>
     <p class="sub">Log in to vote for Player of the Match, check training schedules, or manage the club.</p>
 
-    <div class="social-btns">
+    <!-- Flash Messages -->
+    <% if (messages.error && messages.error.length > 0) { %>
+      <% messages.error.forEach(function(msg) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= msg %>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <% if (messages.success && messages.success.length > 0) { %>
+      <% messages.success.forEach(function(msg) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= msg %>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      <% }); %>
+    <% } %>
+
+    <div class="social-btns mb-3">
       <a href="/auth/google" class="btn--social">Continue with Google</a>
       <a href="/auth/facebook" class="btn--social">Continue with Facebook</a>
     </div>
 
-    <div class="divider">or</div>
+    <div class="divider mb-4">or</div>
 
     <form action="/login" method="POST">
-      <div class="form-group">
+      <div class="form-group mb-3">
         <label for="email">Email</label>
-        <input type="email" id="email" name="email" required autocomplete="email">
+        <input type="email" id="email" name="email" class="form-control" required autocomplete="email">
       </div>
-      <div class="form-group">
+
+      <div class="form-group mb-4">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
+        <input type="password" id="password" name="password" class="form-control" required autocomplete="current-password">
       </div>
-      <button type="submit" class="btn btn--emerald btn--block">Log In</button>
+
+      <button type="submit" class="btn btn--emerald btn--block w-100 py-2">Log In</button>
     </form>
 
-    <p class="auth-footer-link">New to the club? <a href="/register">Create an account</a></p>
+    <p class="auth-footer-link mt-4 text-center">New to the club? <a href="/register">Create an account</a></p>
   </div>
-</div>
+</main>
+
