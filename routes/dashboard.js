@@ -9,9 +9,20 @@ const router = express.Router();
 // ---------------------------------------------------------------------
 router.get('/dashboard', requireAuth, async (req, res, next) => {
   const { role_name: role } = req.user;
-  const viewData = { title: 'Dashboard', role };
+  const viewData = { title: 'Dashboard', role, currentUser: req.user };
 
   try {
+    // 1. Fetch latest completed fixture (Used by Fan Hub POTM card & general overview)
+    const { rows: completedFixtures } = await query(
+      `SELECT id, opponent, our_score, opponent_score, match_date, venue, competition 
+       FROM fixtures 
+       WHERE status = 'finished' 
+       ORDER BY match_date DESC 
+       LIMIT 1`
+    );
+    viewData.latestFixture = completedFixtures[0] || null;
+
+    // 2. Financial Metrics (Treasurer & Admin)
     if (role === 'treasurer' || role === 'admin') {
       const { rows: recentPayments } = await query(
         `SELECT p.*, u.full_name FROM payments p JOIN users u ON u.id = p.user_id
@@ -25,6 +36,7 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       viewData.totalCollected = totals[0].total_collected;
     }
 
+    // 3. Matchday & Squad Metrics (Player, Coach, TM, Admin)
     if (['player', 'coach', 'tm', 'admin'].includes(role)) {
       const { rows: nextFixture } = await query(
         `SELECT * FROM fixtures WHERE status IN ('scheduled', 'live')
@@ -34,8 +46,27 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       viewData.membershipActive = req.user.is_membership_active;
     }
 
+    // 4. Admin Management Data (Fixtures, Approvals & User Directory)
     if (role === 'admin') {
-      // Fetch pending membership approvals
+      // Pending / Scheduled Fixtures
+      const { rows: pendingResults } = await query(
+        `SELECT id, opponent, match_date, venue, competition, home_away, status 
+         FROM fixtures 
+         WHERE status = 'scheduled' 
+         ORDER BY match_date ASC`
+      );
+      viewData.pendingResults = pendingResults;
+
+      // Completed Fixtures for Edit / Reset / Delete
+      const { rows: finishedFixtures } = await query(
+        `SELECT id, opponent, match_date, venue, competition, home_away, our_score, opponent_score, status 
+         FROM fixtures 
+         WHERE status = 'finished' 
+         ORDER BY match_date DESC`
+      );
+      viewData.finishedFixtures = finishedFixtures;
+
+      // Pending membership approvals
       const { rows: pendingApprovals } = await query(
         `SELECT u.id, u.full_name, u.email, r.name AS role_name, u.is_membership_active
          FROM users u JOIN roles r ON r.id = u.role_id
@@ -44,7 +75,7 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       );
       viewData.pendingApprovals = pendingApprovals;
 
-      // Fetch all registered system users for User Management tab
+      // Registered system users
       const { rows: allUsers } = await query(
         `SELECT u.id, u.full_name, u.email, u.is_active, r.name AS role_name
          FROM users u
@@ -52,13 +83,6 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
          ORDER BY u.created_at DESC`
       );
       viewData.allUsers = allUsers;
-    }
-
-    if (role === 'fan') {
-      const { rows: latestFixture } = await query(
-        `SELECT * FROM fixtures WHERE status = 'finished' ORDER BY match_date DESC LIMIT 1`
-      );
-      viewData.latestFixture = latestFixture[0] || null;
     }
 
     res.render('dashboard', viewData);

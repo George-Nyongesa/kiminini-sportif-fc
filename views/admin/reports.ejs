@@ -1,0 +1,85 @@
+<div class="reports-header">
+  <div>
+    <h1>Club Analytics & Reports</h1>
+    <p class="text-muted">Overview of financial collections, team performance, and membership distributions.</p>
+  </div>
+  <div class="reports-actions">
+    <a href="/reports/financial" class="btn btn--gold" target="_blank">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      Printable Financial Statement
+    </a>
+  </div>
+</div>
+
+<div class="dashboard-grid my-4">
+  <!-- Revenue Summary Card -->
+  <div class="card card--glass">
+    <div class="card-header">
+      <h3>Dues & Revenue Summary</h3>
+    </div>
+    <div class="stat-group">
+      <div class="stat-card">
+        <div class="value">KES <%= Number(totalRevenue || 0).toLocaleString() %></div>
+        <div class="label">Total Dues Collected</div>
+      </div>
+      <div class="stat-card">
+        <div class="value">KES <%= Number(pendingDues || 0).toLocaleString() %></div>
+        <div class="label">Pending Payments</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Members Breakdown -->
+  <div class="card card--glass">
+    <div class="card-header">
+      <h3>Member Breakdown</h3>
+    </div>
+    <div class="stat-group">
+      <div class="stat-card">
+        <div class="value"><%= activeMembersCount || 0 %></div>
+        <div class="label">Active Paid Members</div>
+      </div>
+      <div class="stat-card">
+        <div class="value"><%= pendingMembersCount || 0 %></div>
+        <div class="label">Awaiting Payment</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Match Performance Quick Stats -->
+  <div class="card card--glass span-full">
+    <div class="card-header">
+      <h3>Season Match Performance</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Matches Played</th>
+            <th>Wins</th>
+            <th>Draws</th>
+            <th>Losses</th>
+            <th>Goals For</th>
+            <th>Goals Against</th>
+            <th>Goal Difference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (typeof matchStats !== 'undefined' && matchStats) { %>
+            <tr>
+              <td><%= matchStats.played || 0 %></td>
+              <td><%= matchStats.wins || 0 %></td>
+              <td><%= matchStats.draws || 0 %></td>
+              <td><%= matchStats.losses || 0 %></td>
+              <td><%= matchStats.gf || 0 %></td>
+              <td><%= matchStats.ga || 0 %></td>
+              <td><%= (matchStats.gf || 0) - (matchStats.ga || 0) %></td>
+            </tr>
+          <% } else { %>
+            <tr><td colspan="7" class="empty-cell">No match statistics available for this season.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

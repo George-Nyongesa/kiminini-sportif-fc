@@ -10,6 +10,10 @@
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         Overview
       </button>
+      <button class="tab-btn" onclick="switchTab('fixtures-management')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Fixtures & Results
+      </button>
       <button class="tab-btn" onclick="switchTab('user-management')">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         User Management
@@ -28,7 +32,7 @@
           <h3>Fan Hub</h3>
           <p>Vote for Player of the Match after every game and join the matchday chat.</p>
           <% if (typeof latestFixture !== 'undefined' && latestFixture) { %>
-            <p>Latest result: Kiminini <%= latestFixture.our_score %> &ndash; <%= latestFixture.opponent_score %> <%= latestFixture.opponent %></p>
+            <p>Latest result: Kiminini <%= latestFixture.our_score %> &ndash; <%= latestFixture.opponent_score %> <%= latestFixture.opponent %> (<%= latestFixture.competition %>)</p>
             <a href="/fixtures" class="btn btn--emerald">Vote for POTM</a>
           <% } else { %>
             <p>No completed matches yet to vote on.</p>
@@ -47,7 +51,7 @@
         <div class="card card--glass">
           <h3>Next Fixture</h3>
           <% if (typeof nextFixture !== 'undefined' && nextFixture) { %>
-            <p>vs <%= nextFixture.opponent %> &mdash; <%= new Date(nextFixture.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
+            <p>vs <%= nextFixture.opponent %> (<%= nextFixture.competition %>) &mdash; <%= new Date(nextFixture.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
             <p><%= nextFixture.venue || 'Venue TBC' %></p>
           <% } else { %>
             <p>No upcoming fixture scheduled.</p>
@@ -60,6 +64,25 @@
             <a href="/fixtures" class="btn btn--emerald">Open Matchday Engine</a>
           </div>
         <% } %>
+      <% } %>
+
+      <% if (role === 'admin') { %>
+        <!-- Matchday Action Card for Admins -->
+        <div class="card card--glass span-full d-flex justify-content-between align-items-center">
+          <div>
+            <h3>Matchday Controls</h3>
+            <p>Schedule new team fixtures, record final match results, or review club analytics.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn--gold" onclick="openModal('fixtureModal')">
+              + Schedule Fixture
+            </button>
+            <button class="btn btn--emerald" onclick="openModal('logResultModal')">
+              ⚽ Log Match Result
+            </button>
+            <a href="/admin/reports" class="btn btn--ghost">View Reports</a>
+          </div>
+        </div>
       <% } %>
 
       <% if (role === 'treasurer' || role === 'admin') { %>
@@ -91,7 +114,7 @@
               </tbody>
             </table>
           </div>
-          <p style="margin-top:16px;"><a href="/reports/financial" class="btn btn--ghost">Open Printable Report</a></p>
+          <p style="margin-top:16px;"><a href="/admin/reports" class="btn btn--ghost">Open Detailed Financial Analytics</a></p>
         </div>
       <% } %>
 
@@ -100,7 +123,7 @@
           <h3>Pending Membership Approvals</h3>
           <div class="table-responsive">
             <table class="data-table">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
               <tbody>
                 <% if (typeof pendingApprovals !== 'undefined' && pendingApprovals.length) { %>
                   <% pendingApprovals.forEach(u => { %>
@@ -109,10 +132,17 @@
                       <td><%= u.email %></td>
                       <td><%= u.role_name %></td>
                       <td><span class="status-pill status-pill--pending">awaiting payment</span></td>
+                      <td>
+                        <form action="/admin/users/<%= u.id %>/toggle-membership" method="POST" style="display:inline;">
+                          <button type="submit" class="btn-icon btn-icon--success" title="Approve Dues Manually">
+                            ✓ Approve
+                          </button>
+                        </form>
+                      </td>
                     </tr>
                   <% }) %>
                 <% } else { %>
-                  <tr><td colspan="4" class="empty-cell">No pending approvals.</td></tr>
+                  <tr><td colspan="5" class="empty-cell">No pending approvals.</td></tr>
                 <% } %>
               </tbody>
             </table>
@@ -123,7 +153,135 @@
     </div>
   </div>
 
-  <!-- TAB 2: ADMIN USER MANAGEMENT -->
+  <!-- TAB 2: FIXTURES & RESULTS MANAGEMENT -->
+  <% if (role === 'admin') { %>
+    <div id="tab-fixtures-management" class="tab-content">
+      <div class="dashboard-grid">
+        
+        <!-- Scheduled Fixtures Table -->
+        <div class="card card--glass span-full">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Scheduled Fixtures</h3>
+            <button class="btn btn--gold" onclick="openModal('fixtureModal')">+ Schedule New</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Opponent</th>
+                  <th>Competition</th>
+                  <th>Date & Time</th>
+                  <th>Venue</th>
+                  <th>Type</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (typeof pendingResults !== 'undefined' && pendingResults.length) { %>
+                  <% pendingResults.forEach(f => { %>
+                    <tr>
+                      <td><strong>vs <%= f.opponent %></strong></td>
+                      <td><span class="badge"><%= f.competition %></span></td>
+                      <td><%= new Date(f.match_date).toLocaleString('en-GB') %></td>
+                      <td><%= f.venue || 'TBD' %></td>
+                      <td><span class="role-tag"><%= f.home_away.toUpperCase() %></span></td>
+                      <td>
+                        <div class="action-buttons">
+                          <!-- Edit Fixture Button -->
+                          <button 
+                            type="button" 
+                            class="btn-icon" 
+                            title="Edit Fixture"
+                            onclick='openEditFixtureModal(<%= JSON.stringify(f) %>)'
+                          >
+                            ✏️ Edit
+                          </button>
+                          <!-- Delete Fixture -->
+                          <form action="/admin/fixtures/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete this scheduled fixture?');">
+                            <button type="submit" class="btn-icon btn-icon--danger" title="Delete Fixture">
+                              🗑️ Delete
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr><td colspan="6" class="empty-cell">No scheduled fixtures found.</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Finished Fixtures & Match Results Table -->
+        <div class="card card--glass span-full">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Completed Match Results</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Match</th>
+                  <th>Competition</th>
+                  <th>Score</th>
+                  <th>Date</th>
+                  <th>Venue</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (typeof finishedFixtures !== 'undefined' && finishedFixtures.length) { %>
+                  <% finishedFixtures.forEach(f => { %>
+                    <tr>
+                      <td><strong>VS <%= f.opponent %></strong></td>
+                      <td><span class="badge"><%= f.competition %></span></td>
+                      <td><span class="status-pill status-pill--completed"><%= f.our_score %> - <%= f.opponent_score %></span></td>
+                      <td><%= new Date(f.match_date).toLocaleDateString('en-GB') %></td>
+                      <td><%= f.venue || 'TBD' %></td>
+                      <td>
+                        <div class="action-buttons">
+                          <!-- Edit Score Button -->
+                          <button 
+                            type="button" 
+                            class="btn-icon" 
+                            title="Edit Score"
+                            onclick='openEditScoreModal(<%= JSON.stringify(f) %>)'
+                          >
+                            ✏️ Edit Score
+                          </button>
+
+                          <!-- Clear Result (Reset to Scheduled) -->
+                          <form action="/admin/fixtures/<%= f.id %>/clear-result" method="POST" style="display:inline;" onsubmit="return confirm('Reset score and revert this match back to scheduled status?');">
+                            <button type="submit" class="btn-icon" style="color: var(--amber-400, #fbbf24);" title="Reset Result">
+                              🔄 Reset
+                            </button>
+                          </form>
+
+                          <!-- Delete Match -->
+                          <form action="/admin/fixtures/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete this match and all associated data?');">
+                            <button type="submit" class="btn-icon btn-icon--danger" title="Delete Match">
+                              🗑️ Delete
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr><td colspan="6" class="empty-cell">No completed match results found.</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  <% } %>
+
+  <!-- TAB 3: ADMIN USER MANAGEMENT -->
   <% if (role === 'admin') { %>
     <div id="tab-user-management" class="tab-content">
       <div class="admin-grid">
@@ -169,8 +327,19 @@
             <h3>System Accounts</h3>
             <span class="badge badge--home"><%= typeof allUsers !== 'undefined' ? allUsers.length : 0 %> Total</span>
           </div>
+
+          <div style="margin: 12px 0;">
+            <input 
+              type="text" 
+              id="userSearchInput" 
+              placeholder="Search accounts by name, email, or role..." 
+              onkeyup="filterUserDirectory()"
+              style="width: 100%; padding: 8px 12px; border-radius: var(--radius-sm, 4px); border: 1px solid var(--slate-700, #334155); background: var(--slate-900, #0f172a); color: #fff;"
+            />
+          </div>
+
           <div class="table-responsive">
-            <table class="data-table">
+            <table class="data-table" id="userDirectoryTable">
               <thead>
                 <tr>
                   <th>User</th>
@@ -224,6 +393,194 @@
   <% } %>
 </div>
 
+<!-- ===================================================================== -->
+<!-- MODALS SECTION (ADMIN ONLY)                                           -->
+<!-- ===================================================================== -->
+<% if (role === 'admin') { %>
+  <!-- 1. FIXTURE SCHEDULING MODAL -->
+  <div id="fixtureModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Schedule New Fixture</h3>
+        <button type="button" class="modal-close" onclick="closeModal('fixtureModal')">&times;</button>
+      </div>
+
+      <form action="/admin/fixtures" method="POST" class="form-stack">
+        <div class="form-group">
+          <label for="opponent">Opponent Team</label>
+          <input type="text" id="opponent" name="opponent" placeholder="e.g. Eldoret Youth FC" required />
+        </div>
+
+        <div class="form-group">
+          <label for="competition">Competition Type</label>
+          <select id="competition" name="competition" onchange="toggleCustomComp('competition', 'customCompGroup')" required>
+            <option value="League Match">League Match</option>
+            <option value="Friendly Match">Friendly Match</option>
+            <option value="FKF Cup">FKF Cup</option>
+            <option value="Regional Tournament">Regional Tournament</option>
+            <option value="Other">Other (Custom Tournament)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="customCompGroup" style="display: none;">
+          <label for="custom_competition">Tournament Name</label>
+          <input type="text" id="custom_competition" name="custom_competition" placeholder="e.g. Trans Nzoia Super Cup" />
+        </div>
+
+        <div class="form-group">
+          <label for="match_date">Match Date & Time</label>
+          <input type="datetime-local" id="match_date" name="match_date" required />
+        </div>
+
+        <div class="form-group">
+          <label for="venue">Venue</label>
+          <input type="text" id="venue" name="venue" placeholder="e.g. Kiminini Primary Grounds" required />
+        </div>
+
+        <div class="form-group form-group--checkbox">
+          <label for="is_home" class="checkbox-label">
+            <input type="checkbox" id="is_home" name="is_home" value="true" checked />
+            <span>Home Match</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" onclick="closeModal('fixtureModal')">Cancel</button>
+          <button type="submit" class="btn btn--gold">Create Fixture</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. EDIT FIXTURE DETAILS MODAL -->
+  <div id="editFixtureModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Fixture Details</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editFixtureModal')">&times;</button>
+      </div>
+
+      <form id="editFixtureForm" method="POST" class="form-stack">
+        <div class="form-group">
+          <label for="edit_opponent">Opponent Team</label>
+          <input type="text" id="edit_opponent" name="opponent" required />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_competition">Competition Type</label>
+          <select id="edit_competition" name="competition" onchange="toggleCustomComp('edit_competition', 'editCustomCompGroup')" required>
+            <option value="League Match">League Match</option>
+            <option value="Friendly Match">Friendly Match</option>
+            <option value="FKF Cup">FKF Cup</option>
+            <option value="Regional Tournament">Regional Tournament</option>
+            <option value="Other">Other (Custom Tournament)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="editCustomCompGroup" style="display: none;">
+          <label for="edit_custom_competition">Tournament Name</label>
+          <input type="text" id="edit_custom_competition" name="custom_competition" placeholder="e.g. Governor's Cup" />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_match_date">Match Date & Time</label>
+          <input type="datetime-local" id="edit_match_date" name="match_date" required />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_venue">Venue</label>
+          <input type="text" id="edit_venue" name="venue" required />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_home_away">Home or Away</label>
+          <select id="edit_home_away" name="home_away" required>
+            <option value="home">Home</option>
+            <option value="away">Away</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" onclick="closeModal('editFixtureModal')">Cancel</button>
+          <button type="submit" class="btn btn--gold">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. LOG MATCH RESULT MODAL -->
+  <div id="logResultModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Log Match Result</h3>
+        <button type="button" class="modal-close" onclick="closeModal('logResultModal')">&times;</button>
+      </div>
+
+      <form action="/admin/fixtures/log-result" method="POST" class="form-stack">
+        <div class="form-group">
+          <label for="fixture_id">Select Fixture</label>
+          <select id="fixture_id" name="fixture_id" required>
+            <option value="" disabled selected>Select completed match...</option>
+            <% if (typeof pendingResults !== 'undefined' && pendingResults.length) { %>
+              <% pendingResults.forEach(f => { %>
+                <option value="<%= f.id %>">
+                  vs <%= f.opponent %> (<%= f.competition %>, <%= new Date(f.match_date).toLocaleDateString('en-GB') %>)
+                </option>
+              <% }) %>
+            <% } %>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="our_score">Kiminini Score</label>
+            <input type="number" id="our_score" name="our_score" min="0" placeholder="0" required />
+          </div>
+          <div class="form-group">
+            <label for="opponent_score">Opponent Score</label>
+            <input type="number" id="opponent_score" name="opponent_score" min="0" placeholder="0" required />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" onclick="closeModal('logResultModal')">Cancel</button>
+          <button type="submit" class="btn btn--emerald">Save Result</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. EDIT MATCH SCORE MODAL -->
+  <div id="editScoreModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Match Score</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editScoreModal')">&times;</button>
+      </div>
+
+      <form id="editScoreForm" method="POST" class="form-stack">
+        <p id="editScoreMatchLabel" style="font-weight: 600; margin-bottom: 12px; color: var(--gold-400, #facc15);"></p>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label for="edit_our_score">Kiminini Score</label>
+            <input type="number" id="edit_our_score" name="our_score" min="0" required />
+          </div>
+          <div class="form-group">
+            <label for="edit_opponent_score">Opponent Score</label>
+            <input type="number" id="edit_opponent_score" name="opponent_score" min="0" required />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" onclick="closeModal('editScoreModal')">Cancel</button>
+          <button type="submit" class="btn btn--emerald">Update Score</button>
+        </div>
+      </form>
+    </div>
+  </div>
+<% } %>
+
 <script>
   function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -232,6 +589,92 @@
     const activeTab = document.getElementById('tab-' + tabName);
     if (activeTab) activeTab.classList.add('active');
 
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
   }
+
+  function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+  }
+
+  function toggleCustomComp(selectId, targetGroupId) {
+    const select = document.getElementById(selectId);
+    const group = document.getElementById(targetGroupId);
+    if (select && group) {
+      group.style.display = (select.value === 'Other') ? 'block' : 'none';
+    }
+  }
+
+  function openEditFixtureModal(fixture) {
+    const form = document.getElementById('editFixtureForm');
+    form.action = `/admin/fixtures/${fixture.id}/edit`;
+    
+    document.getElementById('edit_opponent').value = fixture.opponent;
+    
+    const standardComps = ['League Match', 'Friendly Match', 'FKF Cup', 'Regional Tournament'];
+    const compSelect = document.getElementById('edit_competition');
+    const customCompGroup = document.getElementById('editCustomCompGroup');
+    const customCompInput = document.getElementById('edit_custom_competition');
+
+    if (standardComps.includes(fixture.competition)) {
+      compSelect.value = fixture.competition;
+      customCompGroup.style.display = 'none';
+      customCompInput.value = '';
+    } else {
+      compSelect.value = 'Other';
+      customCompGroup.style.display = 'block';
+      customCompInput.value = fixture.competition || '';
+    }
+
+    const d = new Date(fixture.match_date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('edit_match_date').value = d.toISOString().slice(0, 16);
+    
+    document.getElementById('edit_venue').value = fixture.venue || '';
+    document.getElementById('edit_home_away').value = fixture.home_away || 'home';
+    
+    openModal('editFixtureModal');
+  }
+
+  function openEditScoreModal(fixture) {
+    const form = document.getElementById('editScoreForm');
+    form.action = `/admin/fixtures/${fixture.id}/result`;
+    
+    document.getElementById('editScoreMatchLabel').innerText = `VS ${fixture.opponent} (${fixture.competition})`;
+    document.getElementById('edit_our_score').value = fixture.our_score;
+    document.getElementById('edit_opponent_score').value = fixture.opponent_score;
+    
+    openModal('editScoreModal');
+  }
+
+  function filterUserDirectory() {
+    const query = document.getElementById('userSearchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('#userDirectoryTable tbody tr');
+
+    rows.forEach(row => {
+      if (row.querySelector('.empty-cell')) return;
+      const rowText = row.textContent.toLowerCase();
+      row.style.display = rowText.includes(query) ? '' : 'none';
+    });
+  }
+
+  window.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      e.target.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+  });
 </script>

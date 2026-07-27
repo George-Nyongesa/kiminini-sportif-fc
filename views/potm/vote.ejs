@@ -1,0 +1,105 @@
+<%- include('../partials/header') %>
+
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      
+      <!-- Flash Messages -->
+      <% if (messages && messages.error) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= messages.error %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% } %>
+      <% if (messages && messages.success) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= messages.success %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% } %>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white py-3">
+          <h2 class="h4 mb-0 fw-bold">⭐ Player of the Match Voting</h2>
+        </div>
+        
+        <div class="card-body p-4">
+          <% if (!latestFixture) { %>
+            <div class="text-center py-4">
+              <p class="text-muted mb-0">No recent completed matches available for voting at this time.</p>
+            </div>
+          <% } else { %>
+            
+            <!-- Match Summary Banner -->
+            <div class="bg-light p-3 rounded mb-4 text-center border">
+              <span class="badge bg-secondary mb-2">Latest Fixture</span>
+              <h3 class="h5 mb-1">
+                Kiminini Sportif FC 
+                <span class="badge bg-dark mx-2"><%= latestFixture.our_score %> - <%= latestFixture.opponent_score %></span> 
+                <%= latestFixture.opponent %>
+              </h3>
+              <small class="text-muted">
+                Played on <%= new Date(latestFixture.match_date).toLocaleDateString('en-KE', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) %>
+              </small>
+            </div>
+
+            <% if (hasVoted) { %>
+              <div class="alert alert-info text-center my-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                You have already cast your vote for this fixture. Thank you for supporting the squad!
+              </div>
+            <% } else { %>
+              
+              <form action="/potm/vote" method="POST">
+                <input type="hidden" name="fixture_id" value="<%= latestFixture.id %>" />
+                
+                <h4 class="h6 text-uppercase text-muted fw-bold mb-3">Select Your Standout Player:</h4>
+
+                <div class="row g-3 mb-4">
+                  <% if (candidatePlayers && candidatePlayers.length > 0) { %>
+                    <% candidatePlayers.forEach(player => { %>
+                      <div class="col-sm-6">
+                        <label class="card h-100 border p-3 cursor-pointer hover-shadow transition-all">
+                          <div class="form-check d-flex align-items-center mb-0">
+                            <input 
+                              class="form-check-input me-3" 
+                              type="radio" 
+                              name="player_id" 
+                              id="player_<%= player.player_id %>" 
+                              value="<%= player.player_id %>" 
+                              required 
+                            />
+                            <div>
+                              <strong class="d-block text-dark"><%= player.full_name %></strong>
+                              <small class="text-muted">
+                                #<%= player.squad_number || 'N/A' %> &bull; <%= player.position || 'Squad Member' %>
+                              </small>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    <% }) %>
+                  <% } else { %>
+                    <div class="col-12">
+                      <p class="text-muted">No eligible player candidates found for this match.</p>
+                    </div>
+                  <% } %>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary btn-lg fw-bold">Submit Vote</button>
+                  <a href="/dashboard" class="btn btn-outline-secondary">Return to Dashboard</a>
+                </div>
+              </form>
+
+            <% } %>
+
+          <% } %>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
