@@ -570,16 +570,23 @@ table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--slate-7
 }
 
 .action-buttons {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   background: var(--slate-700);
   border: 1px solid var(--slate-600);
   color: var(--slate-300);
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -587,6 +594,7 @@ table.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--slate-7
 .btn-icon:hover {
   border-color: var(--emerald);
   color: var(--emerald);
+  background: var(--slate-800);
 }
 
 .btn-icon--danger:hover {

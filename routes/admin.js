@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const { query } = require('../config/db');
 const { requireAuth, requirePasswordChange, requireRole } = require('../middleware/auth');
 const { validateMatchResult } = require('../middleware/validators');
+const { uploadAvatar } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -13,9 +14,10 @@ router.use(requireAuth, requirePasswordChange, requireRole('admin'));
 // 1. USER MANAGEMENT ENDPOINTS
 // =====================================================================
 
-// POST /admin/users — Provision a new user account
+// POST /admin/users — Provision a new user account with optional profile photo
 router.post(
   '/users',
+  uploadAvatar.single('avatar'),
   [
     body('full_name').trim().notEmpty().withMessage('Full name is required.'),
     body('email').isEmail().withMessage('Enter a valid email address.'),
@@ -32,6 +34,7 @@ router.post(
     }
 
     const { full_name, email, phone_number, role_id, temp_password } = req.body;
+    const avatarUrl = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
     try {
       const { rows: existing } = await query('SELECT id FROM users WHERE email = $1', [
@@ -55,15 +58,16 @@ router.post(
 
       const { rows: created } = await query(
         `INSERT INTO users (
-           full_name, email, phone_number, password_hash, role_id, 
+           full_name, email, phone_number, avatar_url, password_hash, role_id, 
            is_membership_active, must_change_password
          )
-         VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
          RETURNING id, full_name, email`,
         [
           full_name.trim(),
           email.toLowerCase().trim(),
-          phone_number || null,
+          phone_number ? phone_number.trim() : null,
+          avatarUrl,
           passwordHash,
           role_id,
           isMembershipActive,
@@ -89,6 +93,76 @@ router.post(
     } catch (err) {
       console.error('Provisioning error:', err);
       req.flash('error', 'Failed to provision user account. Please try again.');
+      return res.redirect('/dashboard');
+    }
+  }
+);
+
+// POST /admin/users/:id/edit — Edit user system account details
+router.post(
+  '/users/:id/edit',
+  uploadAvatar.single('avatar'),
+  [
+    body('full_name').trim().notEmpty().withMessage('Full name is required.'),
+    body('email').isEmail().withMessage('Enter a valid email address.'),
+    body('role_id').notEmpty().withMessage('Please select a valid role.'),
+  ],
+  async (req, res) => {
+    const { id } = req.params;
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      errors.array().forEach((e) => req.flash('error', e.msg));
+      return res.redirect('/dashboard');
+    }
+
+    const { full_name, email, phone_number, role_id } = req.body;
+
+    try {
+      // Check for email collision with other accounts
+      const { rows: existing } = await query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email.toLowerCase().trim(), id]
+      );
+
+      if (existing.length > 0) {
+        req.flash('error', 'Another account is already using that email address.');
+        return res.redirect('/dashboard');
+      }
+
+      // If a new avatar file was uploaded, update avatar_url as well
+      let updateQuery;
+      let queryParams;
+
+      if (req.file) {
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        updateQuery = `
+          UPDATE users 
+          SET full_name = $1, email = $2, phone_number = $3, role_id = $4, avatar_url = $5, updated_at = NOW() 
+          WHERE id = $6
+        `;
+        queryParams = [full_name.trim(), email.toLowerCase().trim(), phone_number ? phone_number.trim() : null, role_id, avatarUrl, id];
+      } else {
+        updateQuery = `
+          UPDATE users 
+          SET full_name = $1, email = $2, phone_number = $3, role_id = $4, updated_at = NOW() 
+          WHERE id = $5
+        `;
+        queryParams = [full_name.trim(), email.toLowerCase().trim(), phone_number ? phone_number.trim() : null, role_id, id];
+      }
+
+      const { rowCount } = await query(updateQuery, queryParams);
+
+      if (rowCount === 0) {
+        req.flash('error', 'User account not found.');
+      } else {
+        req.flash('success', `Updated account details for ${full_name}.`);
+      }
+
+      return res.redirect('/dashboard');
+    } catch (err) {
+      console.error('Account edit error:', err);
+      req.flash('error', 'Failed to update user account details.');
       return res.redirect('/dashboard');
     }
   }

@@ -184,10 +184,9 @@
                       <td><span class="badge"><%= f.competition %></span></td>
                       <td><%= new Date(f.match_date).toLocaleString('en-GB') %></td>
                       <td><%= f.venue || 'TBD' %></td>
-                      <td><span class="role-tag"><%= f.home_away.toUpperCase() %></span></td>
+                      <td><span class="role-tag"><%= f.home_away ? f.home_away.toUpperCase() : 'HOME' %></span></td>
                       <td>
                         <div class="action-buttons">
-                          <!-- Edit Fixture Button -->
                           <button 
                             type="button" 
                             class="btn-icon" 
@@ -196,8 +195,8 @@
                           >
                             ✏️ Edit
                           </button>
-                          <!-- Delete Fixture -->
-                          <form action="/admin/fixtures/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Delete this scheduled fixture?');">
+
+                          <form action="/admin/fixtures/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete this scheduled match?');">
                             <button type="submit" class="btn-icon btn-icon--danger" title="Delete Fixture">
                               🗑️ Delete
                             </button>
@@ -292,15 +291,27 @@
             <h3>Provision New User</h3>
             <p>Create active club credentials for players, coaches, or staff.</p>
           </div>
-          <form action="/admin/users" method="POST" class="form-stack">
+          <form action="/admin/users" method="POST" enctype="multipart/form-data" class="form-stack">
             <div class="form-group">
               <label for="full_name">Full Name</label>
               <input type="text" id="full_name" name="full_name" placeholder="e.g. Victor Wanyama" required>
             </div>
+
             <div class="form-group">
               <label for="email">Email Address</label>
               <input type="email" id="email" name="email" placeholder="user@kimininisportif.co.ke" required>
             </div>
+
+            <div class="form-group">
+              <label for="phone_number">Phone Number (Optional)</label>
+              <input type="text" id="phone_number" name="phone_number" placeholder="e.g. +254700000000">
+            </div>
+
+            <div class="form-group">
+              <label for="avatar">Profile Photo (Optional)</label>
+              <input type="file" id="avatar" name="avatar" accept="image/*">
+            </div>
+
             <div class="form-group">
               <label for="role_id">Assigned Role</label>
               <select id="role_id" name="role_id" required>
@@ -313,10 +324,12 @@
                 <option value="6">Fan</option>
               </select>
             </div>
+
             <div class="form-group">
               <label for="temp_password">Temporary Password</label>
               <input type="text" id="temp_password" name="temp_password" value="ChangeMe2026!" required>
             </div>
+
             <button type="submit" class="btn btn--gold btn--block">Create User Account</button>
           </form>
         </div>
@@ -353,9 +366,16 @@
                   <% allUsers.forEach(u => { %>
                     <tr>
                       <td>
-                        <div class="user-cell">
-                          <strong class="user-cell__name"><%= u.full_name %></strong>
-                          <span class="user-cell__email"><%= u.email %></span>
+                        <div class="user-cell" style="display: flex; align-items: center; gap: 12px;">
+                          <img 
+                            src="<%= u.avatar_url || '/images/default-avatar.png' %>" 
+                            alt="<%= u.full_name %>" 
+                            style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--gold-400, #facc15);"
+                          />
+                          <div>
+                            <strong class="user-cell__name" style="display: block;"><%= u.full_name %></strong>
+                            <span class="user-cell__email" style="font-size: 0.85rem; opacity: 0.8;"><%= u.email %></span>
+                          </div>
                         </div>
                       </td>
                       <td><span class="role-tag"><%= u.role_name %></span></td>
@@ -366,11 +386,24 @@
                       </td>
                       <td>
                         <div class="action-buttons">
+                          <!-- Edit User Button -->
+                          <button 
+                            type="button" 
+                            class="btn-icon" 
+                            title="Edit Account Details"
+                            onclick='openEditUserModal(<%= JSON.stringify(u) %>)'
+                          >
+                            ✏️ Edit
+                          </button>
+
+                          <!-- Reset Password Button -->
                           <form action="/admin/users/<%= u.id %>/reset-password" method="POST" style="display:inline;" onsubmit="return confirm('Reset password for <%= u.full_name %>?');">
                             <button type="submit" class="btn-icon" title="Reset Password">
                               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"/></svg>
                             </button>
                           </form>
+
+                          <!-- Toggle Status Button -->
                           <form action="/admin/users/<%= u.id %>/toggle-status" method="POST" style="display:inline;">
                             <button type="submit" class="btn-icon btn-icon--danger" title="<%= u.is_active ? 'Disable' : 'Enable' %> Account">
                               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
@@ -579,6 +612,55 @@
       </form>
     </div>
   </div>
+
+  <!-- 5. EDIT USER ACCOUNT MODAL -->
+  <div id="editUserModal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit System Account</h3>
+        <button type="button" class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+      </div>
+
+      <form id="editUserForm" method="POST" enctype="multipart/form-data" class="form-stack">
+        <div class="form-group">
+          <label for="edit_full_name">Full Name</label>
+          <input type="text" id="edit_full_name" name="full_name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_email">Email Address</label>
+          <input type="email" id="edit_email" name="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_phone_number">Phone Number (Optional)</label>
+          <input type="text" id="edit_phone_number" name="phone_number" />
+        </div>
+
+        <div class="form-group">
+          <label for="edit_role_id">Assigned Role</label>
+          <select id="edit_role_id" name="role_id" required>
+            <option value="1">Admin</option>
+            <option value="2">Treasurer</option>
+            <option value="3">Team Manager (TM)</option>
+            <option value="4">Coach</option>
+            <option value="5">Player</option>
+            <option value="6">Fan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_avatar">Replace Profile Photo (Optional)</label>
+          <input type="file" id="edit_avatar" name="avatar" accept="image/*" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn--ghost" onclick="closeModal('editUserModal')">Cancel</button>
+          <button type="submit" class="btn btn--gold">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 <% } %>
 
 <script>
@@ -589,8 +671,8 @@
     const activeTab = document.getElementById('tab-' + tabName);
     if (activeTab) activeTab.classList.add('active');
 
-    if (event && event.currentTarget) {
-      event.currentTarget.classList.add('active');
+    if (window.event && window.event.currentTarget) {
+      window.event.currentTarget.classList.add('active');
     }
   }
 
@@ -659,6 +741,18 @@
     
     openModal('editScoreModal');
   }
+
+  const openEditUserModal = (user) => {
+    const form = document.getElementById('editUserForm');
+    form.action = `/admin/users/${user.id}/edit`;
+
+    document.getElementById('edit_full_name').value = user.full_name || '';
+    document.getElementById('edit_email').value = user.email || '';
+    document.getElementById('edit_phone_number').value = user.phone_number || '';
+    document.getElementById('edit_role_id').value = user.role_id || '';
+
+    openModal('editUserModal');
+  };
 
   function filterUserDirectory() {
     const query = document.getElementById('userSearchInput').value.toLowerCase().trim();

@@ -1,0 +1,73 @@
+<div class="dashboard-head">
+  <h1>Account Settings & Profile</h1>
+</div>
+
+<div class="dashboard-container">
+  <div class="admin-grid">
+    <!-- Profile Info & Avatar Card -->
+    <div class="card card--glass">
+      <div class="card-header">
+        <h3>Edit Personal Details</h3>
+      </div>
+
+      <form action="/profile" method="POST" enctype="multipart/form-data" class="form-stack">
+        <div class="avatar-preview-container" style="text-align: center; margin-bottom: 20px;">
+          <img 
+            src="<%= userProfile.avatar_url || '/images/default-avatar.png' %>" 
+            alt="Profile Avatar" 
+            class="avatar-lg"
+            style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold-400, #facc15);"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="avatar">Profile Photo</label>
+          <input type="file" id="avatar" name="avatar" accept="image/*" />
+        </div>
+
+        <div class="form-group">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" name="full_name" value="<%= userProfile.full_name %>" required />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address (Read-only)</label>
+          <input type="email" id="email" value="<%= userProfile.email %>" disabled />
+        </div>
+
+        <div class="form-group">
+          <label for="phone_number">Phone Number</label>
+          <input type="text" id="phone_number" name="phone_number" value="<%= userProfile.phone_number || '' %>" placeholder="e.g. +254700000000" />
+        </div>
+
+        <button type="submit" class="btn btn--gold">Save Profile Changes</button>
+      </form>
+    </div>
+
+    <!-- Security & Password Reset Card -->
+    <div class="card card--glass">
+      <div class="card-header">
+        <h3>Change Password</h3>
+      </div>
+
+      <form action="/profile/change-password" method="POST" class="form-stack">
+        <div class="form-group">
+          <label for="current_password">Current Password</label>
+          <input type="password" id="current_password" name="current_password" required />
+        </div>
+
+        <div class="form-group">
+          <label for="new_password">New Password</label>
+          <input type="password" id="new_password" name="new_password" minlength="8" required />
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password">Confirm New Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" minlength="8" required />
+        </div>
+
+        <button type="submit" class="btn btn--emerald">Update Password</button>
+      </form>
+    </div>
+  </div>
+</div>

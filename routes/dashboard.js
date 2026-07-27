@@ -75,13 +75,14 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       );
       viewData.pendingApprovals = pendingApprovals;
 
-      // Registered system users
-      const { rows: allUsers } = await query(
-        `SELECT u.id, u.full_name, u.email, u.is_active, r.name AS role_name
-         FROM users u
-         JOIN roles r ON r.id = u.role_id
-         ORDER BY u.created_at DESC`
-      );
+     // Registered system users (Including avatar_url, phone_number, and role_id)
+const { rows: allUsers } = await query(
+  `SELECT u.id, u.full_name, u.email, u.phone_number, u.avatar_url, u.is_active, u.role_id, r.name AS role_name
+   FROM users u
+   JOIN roles r ON r.id = u.role_id
+   ORDER BY u.created_at DESC`
+);
+viewData.allUsers = allUsers;
       viewData.allUsers = allUsers;
     }
 
