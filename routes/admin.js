@@ -18,10 +18,8 @@ router.use(requireAuth, requirePasswordChange, requireRole('admin'));
 // GET /dashboard — Admin Main Control Center
 router.get('/dashboard', async (req, res, next) => {
   try {
-    // 1. Fetch system roles dynamically sorted by ID
     const { rows: roles } = await query('SELECT id, name FROM roles ORDER BY id ASC');
 
-    // 2. Fetch all user accounts with joined role names
     const { rows: allUsers } = await query(`
       SELECT 
         u.id, 
@@ -38,7 +36,6 @@ router.get('/dashboard', async (req, res, next) => {
       ORDER BY u.id DESC
     `);
 
-    // 3. Fetch player records joined with user information for position/jersey editing
     const { rows: allPlayers } = await query(`
       SELECT 
         p.id AS player_id,
@@ -56,15 +53,14 @@ router.get('/dashboard', async (req, res, next) => {
       ORDER BY p.jersey_number ASC NULLS LAST, u.full_name ASC
     `);
 
-    // 4. Fetch scheduled and completed fixtures
     const { rows: pendingResults } = await query(
       `SELECT * FROM fixtures WHERE status = 'scheduled' ORDER BY match_date ASC`
     );
+
     const { rows: finishedFixtures } = await query(
       `SELECT * FROM fixtures WHERE status = 'finished' ORDER BY match_date DESC`
     );
 
-    // 5. Fetch pending membership payment approvals
     const { rows: pendingApprovals } = await query(
       `SELECT u.id, u.full_name, u.email, r.name AS role_name 
        FROM users u 
@@ -72,12 +68,11 @@ router.get('/dashboard', async (req, res, next) => {
        WHERE u.is_membership_active = FALSE`
     );
 
-    // 6. Aggregate financial total
     const { rows: totals } = await query(
       `SELECT COALESCE(SUM(amount), 0) AS total_collected FROM payments WHERE status = 'completed'`
     );
 
-    res.render('dashboard', {
+    return res.render('dashboard', {
       title: 'Admin Dashboard',
       currentUser: req.user,
       role: req.user.role_name,
@@ -90,7 +85,7 @@ router.get('/dashboard', async (req, res, next) => {
       totalCollected: totals[0]?.total_collected || 0,
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
@@ -251,7 +246,6 @@ router.post(
       if (rowCount === 0) {
         req.flash('error', 'User account not found.');
       } else {
-        // Sync players table entry if assigned role is player/coach/tm
         const { rows: roleRow } = await query('SELECT name FROM roles WHERE id = $1', [role_id]);
         if (roleRow.length) {
           const roleName = roleRow[0].name.toLowerCase();
@@ -278,7 +272,7 @@ router.post(
 
 // POST /admin/players/:id/edit — Edit player pitch role/position & details
 router.post('/players/:id/edit', async (req, res) => {
-  const { id } = req.params; // player_id or user_id
+  const { id } = req.params;
   const { position, jersey_number, is_captain, is_public } = req.body;
 
   try {
@@ -605,7 +599,7 @@ router.get('/reports', async (req, res, next) => {
        WHERE status = 'finished'`
     );
 
-    res.render('admin/reports', {
+    return res.render('admin/reports', {
       title: 'Club Operational & Financial Reports',
       revenueByType,
       totalRevenue: financialTotals[0].total_revenue,
@@ -617,7 +611,7 @@ router.get('/reports', async (req, res, next) => {
       matchStats: matchAggregates[0],
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 

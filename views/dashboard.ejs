@@ -6,15 +6,15 @@
 
   <% if (role === 'admin') { %>
     <div class="dashboard-tabs">
-      <button class="tab-btn active" onclick="switchTab('overview')">
+      <button class="tab-btn active" onclick="switchTab('overview', event)">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         Overview
       </button>
-      <button class="tab-btn" onclick="switchTab('fixtures-management')">
+      <button class="tab-btn" onclick="switchTab('fixtures-management', event)">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Fixtures & Results
       </button>
-      <button class="tab-btn" onclick="switchTab('user-management')">
+      <button class="tab-btn" onclick="switchTab('user-management', event)">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
         User Management
       </button>
@@ -589,43 +589,43 @@
 <% } %>
 
 <script>
-  function switchTab(tabName) {
+  const switchTab = (tabName, evt) => {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
-    const activeTab = document.getElementById('tab-' + tabName);
+    const activeTab = document.getElementById(`tab-${tabName}`);
     if (activeTab) activeTab.classList.add('active');
 
-    if (window.event && window.event.currentTarget) {
-      window.event.currentTarget.classList.add('active');
+    if (evt && evt.currentTarget) {
+      evt.currentTarget.classList.add('active');
     }
-  }
+  };
 
-  function openModal(modalId) {
+  const openModal = (modalId) => {
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
-  }
+  };
 
-  function closeModal(modalId) {
+  const closeModal = (modalId) => {
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.style.display = 'none';
       document.body.style.overflow = 'auto';
     }
-  }
+  };
 
-  function toggleCustomComp(selectId, targetGroupId) {
+  const toggleCustomComp = (selectId, targetGroupId) => {
     const select = document.getElementById(selectId);
     const group = document.getElementById(targetGroupId);
     if (select && group) {
-      group.style.display = (select.value === 'Other') ? 'block' : 'none';
+      group.style.display = select.value === 'Other' ? 'block' : 'none';
     }
-  }
+  };
 
-  function openEditFixtureModal(fixture) {
+  const openEditFixtureModal = (fixture) => {
     const form = document.getElementById('editFixtureForm');
     form.action = `/admin/fixtures/${fixture.id}/edit`;
     
@@ -654,9 +654,9 @@
     document.getElementById('edit_home_away').value = fixture.home_away || 'home';
     
     openModal('editFixtureModal');
-  }
+  };
 
-  function openEditScoreModal(fixture) {
+  const openEditScoreModal = (fixture) => {
     const form = document.getElementById('editScoreForm');
     form.action = `/admin/fixtures/${fixture.id}/result`;
     
@@ -665,7 +665,7 @@
     document.getElementById('edit_opponent_score').value = fixture.opponent_score;
     
     openModal('editScoreModal');
-  }
+  };
 
   const openEditUserModal = (user) => {
     const form = document.getElementById('editUserForm');
@@ -679,7 +679,7 @@
     openModal('editUserModal');
   };
 
-  function filterUserDirectory() {
+  const filterUserDirectory = () => {
     const query = document.getElementById('userSearchInput').value.toLowerCase().trim();
     const rows = document.querySelectorAll('#userDirectoryTable tbody tr');
 
@@ -688,7 +688,7 @@
       const rowText = row.textContent.toLowerCase();
       row.style.display = rowText.includes(query) ? '' : 'none';
     });
-  }
+  };
 
   window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay')) {
