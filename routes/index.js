@@ -5,7 +5,7 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // ---------------------------------------------------------------------
-// GET /  — Homepage: live ticker, upcoming fixtures, squad showcase
+// GET / — Homepage: live ticker, upcoming fixtures, squad showcase
 // ---------------------------------------------------------------------
 router.get('/', async (req, res, next) => {
   try {
@@ -19,10 +19,22 @@ router.get('/', async (req, res, next) => {
     const { rows: recentResults } = await query(
       `SELECT * FROM fixtures WHERE status = 'finished' ORDER BY match_date DESC LIMIT 5`
     );
+
+    // Fetch active players only for homepage preview
     const { rows: squad } = await query(
-      `SELECT p.id, p.jersey_number, p.position, p.photo_url, p.is_captain, u.full_name
-       FROM players p JOIN users u ON u.id = p.user_id
-       WHERE p.is_public = TRUE ORDER BY p.jersey_number ASC NULLS LAST LIMIT 8`
+      `SELECT 
+         u.id, 
+         u.full_name, 
+         COALESCE(p.photo_url, u.avatar_url, '/images/default-avatar.png') AS avatar_url, 
+         p.jersey_number, 
+         COALESCE(p.position, 'Squad Player') AS position, 
+         COALESCE(p.is_captain, FALSE) AS is_captain
+       FROM users u
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN players p ON u.id = p.user_id
+       WHERE LOWER(r.name) = 'player' AND u.is_active = TRUE
+       ORDER BY p.jersey_number ASC NULLS LAST 
+       LIMIT 8`
     );
 
     res.render('index', {
@@ -66,23 +78,53 @@ router.get('/results', async (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------
-// GET /squad — public squad list
+// GET /squad — public squad list (separated by Players and Staff)
 // ---------------------------------------------------------------------
 router.get('/squad', async (req, res, next) => {
   try {
-    const { rows: squad } = await query(
-      `SELECT p.id, p.jersey_number, p.position, p.photo_url, p.is_captain, u.full_name
-       FROM players p JOIN users u ON u.id = p.user_id
-       WHERE p.is_public = TRUE ORDER BY p.jersey_number ASC NULLS LAST`
+    // 1. Fetch active players registered under the 'player' role
+    const { rows: players } = await query(
+      `SELECT 
+         u.id, 
+         u.full_name, 
+         COALESCE(p.photo_url, u.avatar_url, '/images/default-avatar.png') AS avatar_url, 
+         p.jersey_number, 
+         COALESCE(p.position, 'Squad Player') AS position, 
+         COALESCE(p.is_captain, FALSE) AS is_captain
+       FROM users u
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN players p ON u.id = p.user_id
+       WHERE LOWER(r.name) = 'player' AND u.is_active = TRUE
+       ORDER BY p.jersey_number ASC NULLS LAST, u.full_name ASC`
     );
-    res.render('squad', { title: 'Squad', squad });
+
+    // 2. Fetch technical and management staff ONLY (excluding super admin & admin accounts)
+    const { rows: staff } = await query(
+      `SELECT 
+         u.id, 
+         u.full_name, 
+         COALESCE(u.avatar_url, '/images/default-avatar.png') AS avatar_url, 
+         r.name AS role_name
+       FROM users u
+       JOIN roles r ON u.role_id = r.id
+       WHERE LOWER(r.name) IN ('coach', 'tm', 'treasurer') 
+         AND LOWER(r.name) NOT IN ('admin', 'super_admin', 'superadmin')
+         AND u.is_active = TRUE
+       ORDER BY u.full_name ASC`
+    );
+
+    res.render('squad', {
+      title: 'Squad & Technical Staff',
+      players,
+      staff,
+    });
   } catch (err) {
     next(err);
   }
 });
 
 // ---------------------------------------------------------------------
-// GET /pay-dues — membership payment page (post-registration redirect target)
+// GET /pay-dues — membership payment page
 // ---------------------------------------------------------------------
 router.get('/pay-dues', requireAuth, (req, res) => {
   res.render('pay-dues', { title: 'Pay Membership Dues' });

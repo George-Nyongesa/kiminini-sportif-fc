@@ -1,6 +1,6 @@
 <div class="dashboard-head">
   <div class="dashboard-head__title">
-    <span class="role-pill"><%= role %></span>
+    <span class="role-pill"><%= role.toUpperCase() %></span>
     <h1>Welcome back, <%= currentUser.full_name.split(' ')[0] %></h1>
   </div>
 
@@ -27,45 +27,6 @@
   <div id="tab-overview" class="tab-content active">
     <div class="dashboard-grid">
 
-      <% if (role === 'fan') { %>
-        <div class="card card--glass span-full">
-          <h3>Fan Hub</h3>
-          <p>Vote for Player of the Match after every game and join the matchday chat.</p>
-          <% if (typeof latestFixture !== 'undefined' && latestFixture) { %>
-            <p>Latest result: Kiminini <%= latestFixture.our_score %> &ndash; <%= latestFixture.opponent_score %> <%= latestFixture.opponent %> (<%= latestFixture.competition %>)</p>
-            <a href="/fixtures" class="btn btn--emerald">Vote for POTM</a>
-          <% } else { %>
-            <p>No completed matches yet to vote on.</p>
-          <% } %>
-        </div>
-      <% } %>
-
-      <% if (['player','coach','tm'].includes(role)) { %>
-        <div class="stat-card">
-          <div class="value"><%= membershipActive ? 'Active' : 'Pending' %></div>
-          <div class="label">Membership Status</div>
-          <% if (!membershipActive) { %>
-            <p style="margin-top:10px;"><a href="/pay-dues" class="btn btn--gold">Pay Dues to Unlock</a></p>
-          <% } %>
-        </div>
-        <div class="card card--glass">
-          <h3>Next Fixture</h3>
-          <% if (typeof nextFixture !== 'undefined' && nextFixture) { %>
-            <p>vs <%= nextFixture.opponent %> (<%= nextFixture.competition %>) &mdash; <%= new Date(nextFixture.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
-            <p><%= nextFixture.venue || 'Venue TBC' %></p>
-          <% } else { %>
-            <p>No upcoming fixture scheduled.</p>
-          <% } %>
-        </div>
-        <% if (['coach','tm'].includes(role) && membershipActive) { %>
-          <div class="card card--glass">
-            <h3>Matchday Tools</h3>
-            <p>Update the tactical lineup board or log live match events.</p>
-            <a href="/fixtures" class="btn btn--emerald">Open Matchday Engine</a>
-          </div>
-        <% } %>
-      <% } %>
-
       <% if (role === 'admin') { %>
         <!-- Matchday Action Card for Admins -->
         <div class="card card--glass span-full d-flex justify-content-between align-items-center">
@@ -83,42 +44,12 @@
             <a href="/admin/reports" class="btn btn--ghost">View Reports</a>
           </div>
         </div>
-      <% } %>
 
-      <% if (role === 'treasurer' || role === 'admin') { %>
         <div class="stat-card">
           <div class="value">KES <%= Number(totalCollected || 0).toLocaleString() %></div>
-          <div class="label">Total Collected</div>
+          <div class="label">Total Dues Collected</div>
         </div>
-        <div class="card card--glass span-full">
-          <h3>Recent Payments</h3>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr><th>Member</th><th>Amount</th><th>Type</th><th>Status</th><th>Date</th></tr>
-              </thead>
-              <tbody>
-                <% if (typeof recentPayments !== 'undefined' && recentPayments.length) { %>
-                  <% recentPayments.forEach(p => { %>
-                    <tr>
-                      <td><%= p.full_name %></td>
-                      <td>KES <%= Number(p.amount).toLocaleString() %></td>
-                      <td><%= p.payment_type.replace('_', ' ') %></td>
-                      <td><span class="status-pill status-pill--<%= p.status %>"><%= p.status %></span></td>
-                      <td><%= new Date(p.created_at).toLocaleDateString('en-GB') %></td>
-                    </tr>
-                  <% }) %>
-                <% } else { %>
-                  <tr><td colspan="5" class="empty-cell">No recent payments logged.</td></tr>
-                <% } %>
-              </tbody>
-            </table>
-          </div>
-          <p style="margin-top:16px;"><a href="/admin/reports" class="btn btn--ghost">Open Detailed Financial Analytics</a></p>
-        </div>
-      <% } %>
 
-      <% if (role === 'admin') { %>
         <div class="card card--glass span-full">
           <h3>Pending Membership Approvals</h3>
           <div class="table-responsive">
@@ -130,7 +61,7 @@
                     <tr>
                       <td><%= u.full_name %></td>
                       <td><%= u.email %></td>
-                      <td><%= u.role_name %></td>
+                      <td><span class="role-tag"><%= u.role_name.toUpperCase() %></span></td>
                       <td><span class="status-pill status-pill--pending">awaiting payment</span></td>
                       <td>
                         <form action="/admin/users/<%= u.id %>/toggle-membership" method="POST" style="display:inline;">
@@ -241,7 +172,6 @@
                       <td><%= f.venue || 'TBD' %></td>
                       <td>
                         <div class="action-buttons">
-                          <!-- Edit Score Button -->
                           <button 
                             type="button" 
                             class="btn-icon" 
@@ -251,14 +181,12 @@
                             ✏️ Edit Score
                           </button>
 
-                          <!-- Clear Result (Reset to Scheduled) -->
                           <form action="/admin/fixtures/<%= f.id %>/clear-result" method="POST" style="display:inline;" onsubmit="return confirm('Reset score and revert this match back to scheduled status?');">
                             <button type="submit" class="btn-icon" style="color: var(--amber-400, #fbbf24);" title="Reset Result">
                               🔄 Reset
                             </button>
                           </form>
 
-                          <!-- Delete Match -->
                           <form action="/admin/fixtures/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete this match and all associated data?');">
                             <button type="submit" class="btn-icon btn-icon--danger" title="Delete Match">
                               🗑️ Delete
@@ -316,12 +244,11 @@
               <label for="role_id">Assigned Role</label>
               <select id="role_id" name="role_id" required>
                 <option value="" disabled selected>Select Role</option>
-                <option value="1">Admin</option>
-                <option value="2">Treasurer</option>
-                <option value="3">Team Manager (TM)</option>
-                <option value="4">Coach</option>
-                <option value="5">Player</option>
-                <option value="6">Fan</option>
+                <% if (typeof roles !== 'undefined' && roles.length) { %>
+                  <% roles.forEach(r => { %>
+                    <option value="<%= r.id %>"><%= r.name.toUpperCase() %></option>
+                  <% }) %>
+                <% } %>
               </select>
             </div>
 
@@ -370,6 +297,7 @@
                           <img 
                             src="<%= u.avatar_url || '/images/default-avatar.png' %>" 
                             alt="<%= u.full_name %>" 
+                            onerror="this.onerror=null; this.src='/images/default-avatar.png';"
                             style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--gold-400, #facc15);"
                           />
                           <div>
@@ -378,7 +306,7 @@
                           </div>
                         </div>
                       </td>
-                      <td><span class="role-tag"><%= u.role_name %></span></td>
+                      <td><span class="role-tag"><%= u.role_name ? u.role_name.toUpperCase() : 'USER' %></span></td>
                       <td>
                         <span class="status-pill status-pill--<%= u.is_active ? 'completed' : 'failed' %>">
                           <%= u.is_active ? 'Active' : 'Disabled' %>
@@ -386,7 +314,6 @@
                       </td>
                       <td>
                         <div class="action-buttons">
-                          <!-- Edit User Button -->
                           <button 
                             type="button" 
                             class="btn-icon" 
@@ -396,14 +323,12 @@
                             ✏️ Edit
                           </button>
 
-                          <!-- Reset Password Button -->
                           <form action="/admin/users/<%= u.id %>/reset-password" method="POST" style="display:inline;" onsubmit="return confirm('Reset password for <%= u.full_name %>?');">
                             <button type="submit" class="btn-icon" title="Reset Password">
                               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"/></svg>
                             </button>
                           </form>
 
-                          <!-- Toggle Status Button -->
                           <form action="/admin/users/<%= u.id %>/toggle-status" method="POST" style="display:inline;">
                             <button type="submit" class="btn-icon btn-icon--danger" title="<%= u.is_active ? 'Disable' : 'Enable' %> Account">
                               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
@@ -640,12 +565,12 @@
         <div class="form-group">
           <label for="edit_role_id">Assigned Role</label>
           <select id="edit_role_id" name="role_id" required>
-            <option value="1">Admin</option>
-            <option value="2">Treasurer</option>
-            <option value="3">Team Manager (TM)</option>
-            <option value="4">Coach</option>
-            <option value="5">Player</option>
-            <option value="6">Fan</option>
+            <option value="" disabled>Select Role</option>
+            <% if (typeof roles !== 'undefined' && roles.length) { %>
+              <% roles.forEach(r => { %>
+                <option value="<%= r.id %>"><%= r.name.toUpperCase() %></option>
+              <% }) %>
+            <% } %>
           </select>
         </div>
 

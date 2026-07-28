@@ -8,13 +8,97 @@ const { uploadAvatar } = require('../middleware/upload');
 
 const router = express.Router();
 
+// Enforce admin access across all routes in this module
 router.use(requireAuth, requirePasswordChange, requireRole('admin'));
+
+// =====================================================================
+// 0. ADMIN DASHBOARD VIEW
+// =====================================================================
+
+// GET /dashboard — Admin Main Control Center
+router.get('/dashboard', async (req, res, next) => {
+  try {
+    // 1. Fetch system roles dynamically sorted by ID
+    const { rows: roles } = await query('SELECT id, name FROM roles ORDER BY id ASC');
+
+    // 2. Fetch all user accounts with joined role names
+    const { rows: allUsers } = await query(`
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.email, 
+        u.phone_number, 
+        u.avatar_url, 
+        u.role_id, 
+        u.is_active, 
+        u.is_membership_active,
+        r.name AS role_name
+      FROM users u
+      JOIN roles r ON u.role_id = r.id
+      ORDER BY u.id DESC
+    `);
+
+    // 3. Fetch player records joined with user information for position/jersey editing
+    const { rows: allPlayers } = await query(`
+      SELECT 
+        p.id AS player_id,
+        p.user_id,
+        p.jersey_number,
+        p.position,
+        p.is_captain,
+        p.is_public,
+        u.full_name,
+        u.email,
+        r.name AS role_name
+      FROM players p
+      JOIN users u ON p.user_id = u.id
+      JOIN roles r ON u.role_id = r.id
+      ORDER BY p.jersey_number ASC NULLS LAST, u.full_name ASC
+    `);
+
+    // 4. Fetch scheduled and completed fixtures
+    const { rows: pendingResults } = await query(
+      `SELECT * FROM fixtures WHERE status = 'scheduled' ORDER BY match_date ASC`
+    );
+    const { rows: finishedFixtures } = await query(
+      `SELECT * FROM fixtures WHERE status = 'finished' ORDER BY match_date DESC`
+    );
+
+    // 5. Fetch pending membership payment approvals
+    const { rows: pendingApprovals } = await query(
+      `SELECT u.id, u.full_name, u.email, r.name AS role_name 
+       FROM users u 
+       JOIN roles r ON u.role_id = r.id 
+       WHERE u.is_membership_active = FALSE`
+    );
+
+    // 6. Aggregate financial total
+    const { rows: totals } = await query(
+      `SELECT COALESCE(SUM(amount), 0) AS total_collected FROM payments WHERE status = 'completed'`
+    );
+
+    res.render('dashboard', {
+      title: 'Admin Dashboard',
+      currentUser: req.user,
+      role: req.user.role_name,
+      roles,
+      allUsers,
+      allPlayers,
+      pendingResults,
+      finishedFixtures,
+      pendingApprovals,
+      totalCollected: totals[0]?.total_collected || 0,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // =====================================================================
 // 1. USER MANAGEMENT ENDPOINTS
 // =====================================================================
 
-// POST /admin/users — Provision a new user account with optional profile photo
+// POST /admin/users — Provision a new user account
 router.post(
   '/users',
   uploadAvatar.single('avatar'),
@@ -52,7 +136,7 @@ router.post(
         return res.redirect('/dashboard');
       }
 
-      const roleName = roleRow[0].name;
+      const roleName = roleRow[0].name.toLowerCase();
       const passwordHash = await bcrypt.hash(temp_password, 12);
       const isMembershipActive = roleName !== 'fan';
 
@@ -87,18 +171,18 @@ router.post(
 
       req.flash(
         'success',
-        `Successfully provisioned account for ${full_name} (${roleName}). Temporary password set.`
+        `Successfully provisioned account for ${full_name} (${roleName.toUpperCase()}).`
       );
       return res.redirect('/dashboard');
     } catch (err) {
       console.error('Provisioning error:', err);
-      req.flash('error', 'Failed to provision user account. Please try again.');
+      req.flash('error', 'Failed to provision user account.');
       return res.redirect('/dashboard');
     }
   }
 );
 
-// POST /admin/users/:id/edit — Edit user system account details
+// POST /admin/users/:id/edit — Edit user system account details and roles
 router.post(
   '/users/:id/edit',
   uploadAvatar.single('avatar'),
@@ -119,7 +203,6 @@ router.post(
     const { full_name, email, phone_number, role_id } = req.body;
 
     try {
-      // Check for email collision with other accounts
       const { rows: existing } = await query(
         'SELECT id FROM users WHERE email = $1 AND id != $2',
         [email.toLowerCase().trim(), id]
@@ -130,7 +213,6 @@ router.post(
         return res.redirect('/dashboard');
       }
 
-      // If a new avatar file was uploaded, update avatar_url as well
       let updateQuery;
       let queryParams;
 
@@ -141,14 +223,27 @@ router.post(
           SET full_name = $1, email = $2, phone_number = $3, role_id = $4, avatar_url = $5, updated_at = NOW() 
           WHERE id = $6
         `;
-        queryParams = [full_name.trim(), email.toLowerCase().trim(), phone_number ? phone_number.trim() : null, role_id, avatarUrl, id];
+        queryParams = [
+          full_name.trim(),
+          email.toLowerCase().trim(),
+          phone_number ? phone_number.trim() : null,
+          role_id,
+          avatarUrl,
+          id,
+        ];
       } else {
         updateQuery = `
           UPDATE users 
           SET full_name = $1, email = $2, phone_number = $3, role_id = $4, updated_at = NOW() 
           WHERE id = $5
         `;
-        queryParams = [full_name.trim(), email.toLowerCase().trim(), phone_number ? phone_number.trim() : null, role_id, id];
+        queryParams = [
+          full_name.trim(),
+          email.toLowerCase().trim(),
+          phone_number ? phone_number.trim() : null,
+          role_id,
+          id,
+        ];
       }
 
       const { rowCount } = await query(updateQuery, queryParams);
@@ -156,6 +251,19 @@ router.post(
       if (rowCount === 0) {
         req.flash('error', 'User account not found.');
       } else {
+        // Sync players table entry if assigned role is player/coach/tm
+        const { rows: roleRow } = await query('SELECT name FROM roles WHERE id = $1', [role_id]);
+        if (roleRow.length) {
+          const roleName = roleRow[0].name.toLowerCase();
+          if (['player', 'coach', 'tm'].includes(roleName)) {
+            await query(
+              `INSERT INTO players (user_id, is_public) 
+               VALUES ($1, TRUE) 
+               ON CONFLICT (user_id) DO NOTHING`,
+              [id]
+            );
+          }
+        }
         req.flash('success', `Updated account details for ${full_name}.`);
       }
 
@@ -167,6 +275,42 @@ router.post(
     }
   }
 );
+
+// POST /admin/players/:id/edit — Edit player pitch role/position & details
+router.post('/players/:id/edit', async (req, res) => {
+  const { id } = req.params; // player_id or user_id
+  const { position, jersey_number, is_captain, is_public } = req.body;
+
+  try {
+    const isCaptainBool = is_captain === 'on' || is_captain === 'true' || is_captain === true;
+    const isPublicBool = is_public === 'on' || is_public === 'true' || is_public === true;
+
+    await query(
+      `UPDATE players 
+       SET 
+         position = $1, 
+         jersey_number = $2, 
+         is_captain = $3, 
+         is_public = $4, 
+         updated_at = NOW() 
+       WHERE id = $5 OR user_id = $5`,
+      [
+        position ? position.trim() : 'Squad Player',
+        jersey_number ? parseInt(jersey_number, 10) : null,
+        isCaptainBool,
+        isPublicBool,
+        id,
+      ]
+    );
+
+    req.flash('success', 'Player squad role and details updated successfully.');
+    return res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Player role update error:', err);
+    req.flash('error', 'Failed to update player role details.');
+    return res.redirect('/dashboard');
+  }
+});
 
 // POST /admin/users/:id/reset-password — Issue temporary password reset
 router.post('/users/:id/reset-password', async (req, res) => {
@@ -202,10 +346,9 @@ router.post('/users/:id/toggle-status', async (req, res) => {
   const { id } = req.params;
 
   try {
-    await query(
-      `UPDATE users SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1`,
-      [id]
-    );
+    await query(`UPDATE users SET is_active = NOT is_active, updated_at = NOW() WHERE id = $1`, [
+      id,
+    ]);
 
     req.flash('success', 'User account status updated.');
     return res.redirect('/dashboard');
@@ -241,29 +384,24 @@ router.post('/users/:id/toggle-membership', async (req, res) => {
 // 2. FIXTURES & MATCHDAY OPERATIONS
 // =====================================================================
 
-// POST /admin/fixtures — Schedule new match fixture with competition selection
+// POST /admin/fixtures — Schedule new match fixture
 router.post('/fixtures', async (req, res) => {
   const { opponent, match_date, venue, competition, custom_competition, is_home } = req.body;
 
   try {
-    const homeAway = (is_home === 'on' || is_home === 'true' || is_home === true) ? 'home' : 'away';
-    const finalCompetition = (competition === 'Other' && custom_competition) 
-      ? custom_competition.trim() 
-      : (competition || 'League Match');
+    const homeAway = is_home === 'on' || is_home === 'true' || is_home === true ? 'home' : 'away';
+    const finalCompetition =
+      competition === 'Other' && custom_competition
+        ? custom_competition.trim()
+        : competition || 'League Match';
 
     await query(
       `INSERT INTO fixtures (opponent, match_date, venue, competition, home_away, status)
        VALUES ($1, $2, $3, $4, $5, 'scheduled')`,
-      [
-        opponent.trim(), 
-        match_date, 
-        venue ? venue.trim() : null, 
-        finalCompetition, 
-        homeAway
-      ]
+      [opponent.trim(), match_date, venue ? venue.trim() : null, finalCompetition, homeAway]
     );
 
-    req.flash('success', `Fixture vs ${opponent} (${finalCompetition}) scheduled successfully.`);
+    req.flash('success', `Fixture vs ${opponent} scheduled successfully.`);
     return res.redirect('/dashboard');
   } catch (err) {
     console.error('Fixture scheduling error:', err);
@@ -272,15 +410,16 @@ router.post('/fixtures', async (req, res) => {
   }
 });
 
-// POST /admin/fixtures/:id/edit — Update details (including competition type)
+// POST /admin/fixtures/:id/edit — Update details
 router.post('/fixtures/:id/edit', async (req, res) => {
   const { id } = req.params;
   const { opponent, match_date, venue, competition, custom_competition, home_away } = req.body;
 
   try {
-    const finalCompetition = (competition === 'Other' && custom_competition) 
-      ? custom_competition.trim() 
-      : (competition || 'League Match');
+    const finalCompetition =
+      competition === 'Other' && custom_competition
+        ? custom_competition.trim()
+        : competition || 'League Match';
 
     const { rowCount } = await query(
       `UPDATE fixtures 
@@ -293,12 +432,12 @@ router.post('/fixtures/:id/edit', async (req, res) => {
          updated_at = NOW()
        WHERE id = $6`,
       [
-        opponent.trim(), 
-        match_date, 
-        venue ? venue.trim() : null, 
-        finalCompetition, 
-        home_away || 'home', 
-        id
+        opponent.trim(),
+        match_date,
+        venue ? venue.trim() : null,
+        finalCompetition,
+        home_away || 'home',
+        id,
       ]
     );
 
@@ -334,15 +473,11 @@ router.post('/fixtures/log-result', validateMatchResult, async (req, res) => {
          status = 'finished', 
          updated_at = NOW() 
        WHERE id = $3`,
-      [
-        parseInt(our_score, 10),
-        parseInt(opponent_score, 10),
-        fixture_id,
-      ]
+      [parseInt(our_score, 10), parseInt(opponent_score, 10), fixture_id]
     );
 
     if (rowCount === 0) {
-      req.flash('error', 'Fixture not found or failed to update.');
+      req.flash('error', 'Fixture not found.');
     } else {
       req.flash('success', 'Match result logged successfully.');
     }

@@ -1,20 +1,107 @@
 <section class="block">
   <div class="container">
-    <div class="section-head"><h2>Squad</h2></div>
-    <div class="card-grid">
-      <% if (squad.length) { %>
-        <% squad.forEach(p => { %>
+    
+    <!-- SECTION 1: TECHNICAL & MANAGEMENT STAFF -->
+    <div class="section-head">
+      <h2>Technical & Management Staff</h2>
+    </div>
+    <div class="card-grid" style="margin-bottom: 3rem;">
+      <% if (typeof staff !== 'undefined' && staff.length) { %>
+        <% staff.forEach(s => { %>
           <div class="card player-card">
-            <img class="player-card__photo" src="<%= p.photo_url %>" alt="<%= p.full_name %>" onerror="this.style.background='var(--slate-700)'">
-            <div class="player-card__number">#<%= p.jersey_number || '—' %></div>
-            <div class="player-card__name"><%= p.full_name %></div>
-            <div class="player-card__position"><%= p.position || 'Squad Player' %></div>
-            <% if (p.is_captain) { %><div class="player-card__captain">Captain</div><% } %>
+            <!-- Staff Avatar Container -->
+            <div class="player-card__image-wrap">
+              <img 
+                class="player-card__photo" 
+                src="<%= s.avatar_url || '/images/default-avatar.png' %>" 
+                alt="<%= s.full_name %>" 
+                onerror="this.onerror=null; this.src='/images/default-avatar.png';"
+              />
+            </div>
+
+            <!-- Staff Details -->
+            <div class="player-card__info">
+              <div class="player-card__header">
+                <span class="role-tag">
+                  <% if (s.role_name === 'tm') { %>
+                    Team Manager
+                  <% } else if (s.role_name === 'coach') { %>
+                    Head Coach
+                  <% } else if (s.role_name === 'treasurer') { %>
+                    Treasurer
+                  <% } else { %>
+                    <%= s.role_name %>
+                  <% } %>
+                </span>
+              </div>
+
+              <h3 class="player-card__name">
+                <%= s.full_name %>
+              </h3>
+            </div>
           </div>
         <% }) %>
       <% } else { %>
-        <p>Squad list coming soon.</p>
+        <p class="empty-cell">No technical staff listed.</p>
       <% } %>
     </div>
+
+    <!-- SECTION 2: PLAYER PROFILES -->
+    <div class="section-head">
+      <h2>Player Profiles</h2>
+    </div>
+    <div class="card-grid">
+      <% if (typeof players !== 'undefined' && players.length) { %>
+        <% players.forEach(p => { %>
+          <div class="card player-card">
+            <!-- Player Image Container -->
+            <div class="player-card__image-wrap">
+              <img 
+                class="player-card__photo" 
+                src="<%= p.avatar_url || p.photo_url || '/images/default-avatar.png' %>" 
+                alt="<%= p.full_name %>" 
+                onerror="this.onerror=null; this.src='/images/default-avatar.png';"
+              />
+              <% if (p.is_captain) { %>
+                <span class="player-card__captain-badge">
+                  Captain
+                </span>
+              <% } %>
+            </div>
+
+            <!-- Player Details -->
+            <div class="player-card__info">
+              <div class="player-card__header">
+                <span class="player-card__number">
+                  #<%= p.jersey_number || '—' %>
+                </span>
+                <span class="role-tag">
+                  <%= p.position || 'Squad Player' %>
+                </span>
+              </div>
+
+              <h3 class="player-card__name">
+                <%= p.full_name %>
+              </h3>
+
+              <!-- Optional Stats Row -->
+              <% if (typeof p.appearances !== 'undefined' || typeof p.goals !== 'undefined') { %>
+                <div class="player-card__stats">
+                  <% if (typeof p.appearances !== 'undefined') { %>
+                    <span><strong><%= p.appearances %></strong> Apps</span>
+                  <% } %>
+                  <% if (typeof p.goals !== 'undefined') { %>
+                    <span><strong><%= p.goals %></strong> Goals</span>
+                  <% } %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p class="empty-cell">No active players found.</p>
+      <% } %>
+    </div>
+
   </div>
 </section>

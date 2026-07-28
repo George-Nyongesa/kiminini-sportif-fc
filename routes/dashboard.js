@@ -46,8 +46,31 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       viewData.membershipActive = req.user.is_membership_active;
     }
 
-    // 4. Admin Management Data (Fixtures, Approvals & User Directory)
+    // 4. Admin Management Data (Roles, Players, Fixtures, Approvals & User Directory)
     if (role === 'admin') {
+      // System roles for select dropdowns
+      const { rows: roles } = await query('SELECT id, name FROM roles ORDER BY id ASC');
+      viewData.roles = roles;
+
+      // Player squad profiles (position, jersey number, captain status, visibility)
+      const { rows: allPlayers } = await query(`
+        SELECT 
+          p.id AS player_id,
+          p.user_id,
+          p.jersey_number,
+          p.position,
+          p.is_captain,
+          p.is_public,
+          u.full_name,
+          u.email,
+          r.name AS role_name
+        FROM players p
+        JOIN users u ON p.user_id = u.id
+        JOIN roles r ON u.role_id = r.id
+        ORDER BY p.jersey_number ASC NULLS LAST, u.full_name ASC
+      `);
+      viewData.allPlayers = allPlayers;
+
       // Pending / Scheduled Fixtures
       const { rows: pendingResults } = await query(
         `SELECT id, opponent, match_date, venue, competition, home_away, status 
@@ -75,14 +98,13 @@ router.get('/dashboard', requireAuth, async (req, res, next) => {
       );
       viewData.pendingApprovals = pendingApprovals;
 
-     // Registered system users (Including avatar_url, phone_number, and role_id)
-const { rows: allUsers } = await query(
-  `SELECT u.id, u.full_name, u.email, u.phone_number, u.avatar_url, u.is_active, u.role_id, r.name AS role_name
-   FROM users u
-   JOIN roles r ON r.id = u.role_id
-   ORDER BY u.created_at DESC`
-);
-viewData.allUsers = allUsers;
+      // Registered system users (Including avatar_url, phone_number, and role_id)
+      const { rows: allUsers } = await query(
+        `SELECT u.id, u.full_name, u.email, u.phone_number, u.avatar_url, u.is_active, u.role_id, u.is_membership_active, r.name AS role_name
+         FROM users u
+         JOIN roles r ON r.id = u.role_id
+         ORDER BY u.created_at DESC`
+      );
       viewData.allUsers = allUsers;
     }
 
